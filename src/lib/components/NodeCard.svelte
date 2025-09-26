@@ -1,20 +1,27 @@
 <script lang="ts">
 	import Icon from './Icon.svelte';
-	export let label: string;
-	export let type:
-		| 'internet'
-		| 'router'
-		| 'switch'
-		| 'mls'
-		| 'server'
-		| 'client'
-		| 'firewall'
-		| 'vpn'
-		| 'wlc'
-		| 'ap'
-		| 'storage'
-		| 'db';
-	export let size = 56;
+
+	let {
+		label,
+		type,
+		size = 56
+	} = $props<{
+		label: string;
+		type:
+			| 'internet'
+			| 'router'
+			| 'switch'
+			| 'mls'
+			| 'server'
+			| 'client'
+			| 'firewall'
+			| 'vpn'
+			| 'wlc'
+			| 'ap'
+			| 'storage'
+			| 'db';
+		size?: number;
+	}>();
 </script>
 
 <div

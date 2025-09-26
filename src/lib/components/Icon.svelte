@@ -1,23 +1,24 @@
 <script lang="ts">
-	import { get } from 'svelte/store';
+	import { fromStore } from 'svelte/store';
 	import { iconSet, type IconSet } from '$lib/stores/iconSet';
 
-	export let type:
-		| 'internet'
-		| 'router'
-		| 'switch'
-		| 'mls'
-		| 'server'
-		| 'client'
-		| 'firewall'
-		| 'vpn'
-		| 'wlc'
-		| 'ap'
-		| 'storage'
-		| 'db';
-
-	export let size = 56; // px
-	export let title: string | undefined;
+	let { type, size = 56, title } = $props<{
+		type:
+			| 'internet'
+			| 'router'
+			| 'switch'
+			| 'mls'
+			| 'server'
+			| 'client'
+			| 'firewall'
+			| 'vpn'
+			| 'wlc'
+			| 'ap'
+			| 'storage'
+			| 'db';
+		size?: number;
+		title?: string;
+	}>();
 
 	// Map logical type -> file path per set (using your static/ tree)
 	const map: Record<IconSet, Record<string, string>> = {
@@ -51,8 +52,18 @@
 		}
 	};
 
-	$: set = get(iconSet);
-	$: src = map[set][type];
+	const iconSetState = fromStore(iconSet);
+	const src = $derived(map[iconSetState.current]?.[type]);
 </script>
 
-<img {src} alt={title ?? type} width={size} height={size} class="select-none" draggable="false" />
+{#if src}
+	<img {src} alt={title ?? type} width={size} height={size} class="select-none" draggable="false" />
+{:else}
+	<div
+		class="flex items-center justify-center rounded bg-white/10 text-xs text-red-200/80"
+		style:width={`${size}px`}
+		style:height={`${size}px`}
+	>
+		Missing icon: {type}
+	</div>
+{/if}
