@@ -41,6 +41,18 @@ export type LayoutHints = {
         lockY?: boolean;
 };
 
+export type LinkAppearance = {
+        stroke?: string;
+        dashedStroke?: string;
+        width?: number;
+        dashArray?: string;
+        opacity?: number;
+        linecap?: 'butt' | 'round' | 'square';
+        linejoin?: 'miter' | 'round' | 'bevel';
+        glowColor?: string;
+        glowBlur?: number;
+};
+
 export type NodeInstance = {
         id: string;
         type: NodeType;
@@ -102,6 +114,7 @@ export type LayoutSettings = {
         minNodeSize?: number;
         maxNodeSize?: number;
         minNodeScale?: number;
+        linkStyle?: LinkAppearance;
 };
 
 export type DevicePlacement = {
@@ -126,9 +139,22 @@ export type CanvasMetrics = {
         padding: Spacing;
 };
 
+export type ResolvedLinkStyle = {
+        stroke: string;
+        dashedStroke: string;
+        width: number;
+        dashArray: string;
+        opacity: number;
+        linecap: 'butt' | 'round' | 'square';
+        linejoin: 'miter' | 'round' | 'bevel';
+        glowColor: string;
+        glowBlur: number;
+};
+
 export type FlowLayout = {
         nodes: NodeInstance[];
         links: Link[];
         zones: ComputedZone[];
         canvas: CanvasMetrics;
+        linkStyle: ResolvedLinkStyle;
 };

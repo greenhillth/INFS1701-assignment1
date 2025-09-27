@@ -36,6 +36,7 @@
                 class="canvas__links"
                 viewBox={`0 0 ${layout.canvas.width} ${layout.canvas.height}`}
                 preserveAspectRatio="none"
+                style={`--link-stroke:${layout.linkStyle.stroke}; --link-dashed-stroke:${layout.linkStyle.dashedStroke}; --link-width:${layout.linkStyle.width}px; --link-opacity:${layout.linkStyle.opacity}; --link-dash-array:${layout.linkStyle.dashArray}; --link-linecap:${layout.linkStyle.linecap}; --link-linejoin:${layout.linkStyle.linejoin}; --link-glow-color:${layout.linkStyle.glowColor}; --link-glow-blur:${layout.linkStyle.glowBlur}px;`}
         >
                 {#each layout.links as link (link.source + link.target)}
                         {#if nodeLookup[link.source] && nodeLookup[link.target]}
@@ -47,8 +48,6 @@
                                                         link.orientation
                                                 )}
                                                 class={`canvas__link${link.dashed ? ' canvas__link--dashed' : ''}`}
-                                                stroke-linecap="round"
-                                                stroke-linejoin="round"
                                                 fill="none"
                                         />
                                 {:else}
@@ -58,7 +57,6 @@
                                                 x2={nodeLookup[link.target].x}
                                                 y2={nodeLookup[link.target].y}
                                                 class={`canvas__link${link.dashed ? ' canvas__link--dashed' : ''}`}
-                                                stroke-linecap="round"
                                         />
                                 {/if}
                         {/if}
@@ -108,18 +106,23 @@
                 inset: 0;
                 width: 100%;
                 height: 100%;
-                color: rgb(148 163 184 / 0.7);
+                color: var(--link-stroke, rgb(148 163 184 / 0.75));
+                z-index: 8;
+                pointer-events: none;
+                opacity: var(--link-opacity, 1);
+                filter: drop-shadow(0 0 var(--link-glow-blur, 0px) var(--link-glow-color, transparent));
         }
 
         .canvas__link {
-                stroke: currentColor;
-                stroke-width: 1.4;
+                stroke: var(--link-stroke, currentColor);
+                stroke-width: var(--link-width, 1.4px);
+                stroke-linecap: var(--link-linecap, round);
+                stroke-linejoin: var(--link-linejoin, round);
         }
 
         .canvas__link--dashed {
-                stroke: rgb(125 211 252 / 0.9);
-                stroke-width: 1;
-                stroke-dasharray: 3.5 3.5;
+                stroke: var(--link-dashed-stroke, var(--link-stroke, currentColor));
+                stroke-dasharray: var(--link-dash-array, 3.5 3.5);
         }
 
         .canvas__zone {

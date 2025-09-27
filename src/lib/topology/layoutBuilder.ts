@@ -7,6 +7,7 @@ import type {
         LayoutSettings,
         NodeInstance,
         Positioning,
+        ResolvedLinkStyle,
         Spacing,
         ZoneDefinition
 } from './types';
@@ -136,6 +137,30 @@ const normaliseZoneSpacing = (spacing: LayoutSettings['zoneSpacing']): AxisSpaci
         };
 };
 
+const defaultLinkStyle: ResolvedLinkStyle = {
+        stroke: 'rgb(148 163 184 / 0.75)',
+        dashedStroke: 'rgb(125 211 252 / 0.85)',
+        width: 1.4,
+        dashArray: '3.5 3.5',
+        opacity: 1,
+        linecap: 'round',
+        linejoin: 'round',
+        glowColor: 'rgb(14 116 144 / 0.55)',
+        glowBlur: 0
+};
+
+const normaliseLinkStyle = (style: LayoutSettings['linkStyle']): ResolvedLinkStyle => ({
+        stroke: style?.stroke ?? defaultLinkStyle.stroke,
+        dashedStroke: style?.dashedStroke ?? style?.stroke ?? defaultLinkStyle.dashedStroke,
+        width: style?.width ?? defaultLinkStyle.width,
+        dashArray: style?.dashArray ?? defaultLinkStyle.dashArray,
+        opacity: style?.opacity ?? defaultLinkStyle.opacity,
+        linecap: style?.linecap ?? defaultLinkStyle.linecap,
+        linejoin: style?.linejoin ?? defaultLinkStyle.linejoin,
+        glowColor: style?.glowColor ?? defaultLinkStyle.glowColor,
+        glowBlur: style?.glowBlur ?? defaultLinkStyle.glowBlur
+});
+
 const clamp = (value: number, min: number, max?: number): number => {
         if (max !== undefined) {
                 return Math.min(Math.max(value, min), max);
@@ -242,6 +267,7 @@ export const instantiateLayout = (blueprint: LayoutBlueprint): FlowLayout => {
         const minNodeSize = settings?.minNodeSize ?? 18;
         const maxNodeSize = settings?.maxNodeSize;
         const minNodeScale = settings?.minNodeScale ?? 0.6;
+        const linkStyle = normaliseLinkStyle(settings?.linkStyle);
 
         const resolvedNodes: NodeInstance[] = [];
         const resolvedMap: Record<string, NodeInstance> = {};
@@ -506,6 +532,7 @@ export const instantiateLayout = (blueprint: LayoutBlueprint): FlowLayout => {
                         height: paddedHeight * scale,
                         scale,
                         padding: scaledPadding
-                }
+                },
+                linkStyle
         };
 };

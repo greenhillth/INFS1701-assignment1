@@ -8,7 +8,16 @@ const settings: LayoutBlueprint['settings'] = {
         nodeSpacing: 10,
         minNodeSize: 18,
         maxNodeSize: 44,
-        minNodeScale: 0.65
+        minNodeScale: 0.65,
+        linkStyle: {
+                stroke: 'rgb(148 163 184 / 0.88)',
+                dashedStroke: 'rgb(96 165 250 / 0.9)',
+                width: 0.5,
+                dashArray: '2 3',
+                opacity: 0.95,
+                glowColor: 'rgb(14 165 233 / 0.45)',
+                glowBlur: 10
+        }
 };
 
 const nodeGap = settings.nodeSpacing ?? 14;
@@ -20,7 +29,7 @@ const blueprint: LayoutBlueprint = {
                 {
                         id: 'edge',
                         label: 'Edge & Perimeter',
-                        origin: { x: 50, y: 6 },
+                        origin: { x: 6, y: 6 },
                         padding: { top: 8, right: 10, bottom: 8, left: 10 },
                         minWidth: 22,
                         minHeight: 10
@@ -28,7 +37,7 @@ const blueprint: LayoutBlueprint = {
                 {
                         id: 'core',
                         label: 'Core Network & Security',
-                        origin: { x: 50, y: 28 },
+                        origin: { x: 55, y: 6 },
                         padding: { top: 8, right: 18, bottom: 10, left: 18 },
                         minWidth: 34,
                         minHeight: 36
