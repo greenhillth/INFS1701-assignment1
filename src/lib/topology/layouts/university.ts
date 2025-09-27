@@ -116,29 +116,24 @@ const blueprint: LayoutBlueprint = {
                         ],
                         { zone: 'edge', start: { x: 0, y: 0 }, gap: nodeGap }
                 ),
-                ...stackDevices(
-                        'vertical',
-                        [
-                                {
-                                        template: 'router',
-                                        id: 'core-router',
-                                        overrides: {
-                                                label: 'Core Router',
-                                                description:
-                                                        'Routes traffic between the campus core, distribution layers and data centre.'
-                                        }
-                                },
-                                {
-                                        template: 'multilayerSwitch',
-                                        id: 'core-switch',
-                                        overrides: {
-                                                description:
-                                                        'Aggregates distribution switches and provides high-speed inter-VLAN routing.'
-                                        }
-                                }
-                        ],
-                        { zone: 'core', start: { x: 0, y: 0 }, gap: nodeGap }
-                ),
+                placeDevice('router', {
+                        id: 'core-router',
+                        zone: 'core',
+                        overrides: {
+                                label: 'Core Router',
+                                description: 'Routes traffic between the campus core, distribution layers and data centre.'
+                        },
+                        position: { offsetX: 0, offsetY: 0 }
+                }),
+                placeDevice('multilayerSwitch', {
+                        id: 'core-switch',
+                        zone: 'core',
+                        overrides: {
+                                description:
+                                        'Aggregates distribution switches and provides high-speed inter-VLAN routing.'
+                        },
+                        position: { reference: 'core-router', offsetX: 5, offsetY: 0 }
+                }),
                 placeDevice('wirelessController', {
                         id: 'wlc',
                         zone: 'core',

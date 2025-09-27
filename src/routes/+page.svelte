@@ -8,6 +8,10 @@
         const iconSetState = fromStore(iconSet);
         const pageState = fromStore(page);
         const layout = universityLayout;
+        let flowCanvasComponent: FlowCanvas | null = null;
+        let diagramFrameElement: HTMLDivElement | null = null;
+        let exporting = $state(false);
+        const isEpic = $derived(iconSetState.current === 'crayon');
 
         $effect(() => {
                 const q = pageState.current.url.searchParams.get('icons') as IconSet | null;
@@ -15,6 +19,47 @@
                         iconSetState.current = q;
                 }
         });
+
+        function setMode(mode: IconSet) {
+                if (iconSetState.current !== mode) {
+                        iconSetState.current = mode;
+                }
+        }
+
+        function toggleMode() {
+                setMode(iconSetState.current === 'crayon' ? 'affinity' : 'crayon');
+        }
+
+        async function exportCanvas() {
+                if (typeof window === 'undefined') {
+                        return;
+                }
+
+                const exportElement = diagramFrameElement ?? flowCanvasComponent?.getCanvasElement?.();
+                if (!exportElement) {
+                        return;
+                }
+
+                exporting = true;
+
+                try {
+                        const { toPng } = await import('html-to-image');
+                        const dataUrl = await toPng(exportElement, {
+                                cacheBust: true,
+                                pixelRatio: window.devicePixelRatio ?? 1
+                        });
+
+                        const link = document.createElement('a');
+                        const modeLabel = iconSetState.current === 'crayon' ? 'epic' : 'standard';
+                        link.href = dataUrl;
+                        link.download = `network-topology-${modeLabel}.png`;
+                        link.click();
+                } catch (error) {
+                        console.error('Failed to export canvas', error);
+                } finally {
+                        exporting = false;
+                }
+        }
 </script>
 
 <div class="page">
@@ -22,37 +67,44 @@
                 <header class="page__header">
                         <h1 class="page__title">University Network Topology</h1>
 
-                        <div class="icon-toggle">
-                                <span class="icon-toggle__label">Icon set</span>
-                                <label class="icon-toggle__option">
-                                        <input
-                                                type="radio"
-                                                name="iconset"
-                                                value="affinity"
-                                                bind:group={iconSetState.current}
-                                                class="icon-toggle__input"
-                                        />
-                                        Affinity (SVG)
-                                </label>
-                                <label class="icon-toggle__option">
-                                        <input
-                                                type="radio"
-                                                name="iconset"
-                                                value="crayon"
-                                                bind:group={iconSetState.current}
-                                                class="icon-toggle__input"
-                                        />
-                                        Crayon (PNG)
-                                </label>
+                        <div class="control-panel">
+                                <div class="mode-switch">
+                                        <span class="mode-switch__label">Mode</span>
+                                        <button
+                                                type="button"
+                                                class={`mode-switch__toggle${isEpic ? ' mode-switch__toggle--epic' : ''}`}
+                                                role="switch"
+                                                aria-label="Mode"
+                                                aria-checked={isEpic}
+                                                onclick={toggleMode}
+                                        >
+                                                <span class="mode-switch__option mode-switch__option--standard">
+                                                        Standard
+                                                </span>
+                                                <span class="mode-switch__thumb" aria-hidden="true"></span>
+                                                <span class="mode-switch__option mode-switch__option--epic">
+                                                        epic
+                                                </span>
+                                        </button>
+                                </div>
+
+                                <button
+                                        type="button"
+                                        class="export-button"
+                                        onclick={exportCanvas}
+                                        disabled={exporting}
+                                >
+                                        {exporting ? 'Exporting…' : 'Export PNG'}
+                                </button>
                         </div>
                 </header>
         </div>
 
         <section class="diagram">
                 <div class="diagram__inner">
-                        <div class="diagram__frame">
+                        <div class="diagram__frame" bind:this={diagramFrameElement}>
                                 <div class="diagram__canvas">
-                                        <FlowCanvas {layout} />
+                                        <FlowCanvas {layout} bind:this={flowCanvasComponent} />
                                 </div>
 
                                 <div class="diagram__legend">
@@ -109,32 +161,139 @@
                 letter-spacing: -0.01em;
         }
 
-        .icon-toggle {
-                display: inline-flex;
-                align-items: center;
-                gap: 0.9rem;
-                padding: 0.65rem 1.1rem;
-                border-radius: 9999px;
-                border: 1px solid rgb(148 163 184 / 0.25);
-                background: rgb(15 23 42 / 0.5);
+        .control-panel {
+                display: flex;
+                flex-direction: column;
+                gap: 0.85rem;
+                width: min(16rem, 100%);
+                margin-left: auto;
         }
 
-        .icon-toggle__label {
+        .mode-switch {
+                display: flex;
+                flex-direction: column;
+                gap: 0.4rem;
+        }
+
+        .mode-switch__label {
                 font-size: 0.75rem;
                 text-transform: uppercase;
                 letter-spacing: 0.08em;
                 color: rgb(226 232 240 / 0.75);
         }
 
-        .icon-toggle__option {
-                display: inline-flex;
+        .mode-switch__toggle {
+                position: relative;
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
                 align-items: center;
-                gap: 0.3rem;
-                font-size: 0.85rem;
+                padding: 0.4rem;
+                border-radius: 9999px;
+                border: 1px solid rgb(148 163 184 / 0.35);
+                background: rgb(15 23 42 / 0.65);
+                color: rgb(226 232 240 / 0.85);
+                font-size: 0.8rem;
+                font-weight: 500;
+                letter-spacing: 0.02em;
+                cursor: pointer;
+                transition: border-color 150ms ease, background 150ms ease, box-shadow 150ms ease;
         }
 
-        .icon-toggle__input {
-                accent-color: #ec4899;
+        .mode-switch__toggle:hover {
+                border-color: rgb(148 163 184 / 0.55);
+                background: rgb(30 41 59 / 0.75);
+        }
+
+        .mode-switch__toggle:focus-visible {
+                outline: 2px solid rgb(96 165 250 / 0.8);
+                outline-offset: 2px;
+        }
+
+        .mode-switch__thumb {
+                position: absolute;
+                inset: 0.25rem auto 0.25rem 0.25rem;
+                width: calc(50% - 0.5rem);
+                border-radius: 9999px;
+                background: linear-gradient(135deg, rgb(59 130 246 / 0.35), rgb(59 130 246 / 0.7));
+                box-shadow: 0 12px 22px rgb(59 130 246 / 0.35);
+                transform: translateX(0);
+                transition: transform 200ms ease;
+                z-index: 1;
+        }
+
+        .mode-switch__toggle--epic .mode-switch__thumb {
+                transform: translateX(calc(100% + 0.5rem));
+        }
+
+        .mode-switch__option {
+                position: relative;
+                z-index: 2;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                gap: 0.2rem;
+                padding: 0.15rem 0.3rem;
+                text-transform: uppercase;
+                letter-spacing: 0.08em;
+                pointer-events: auto;
+        }
+
+        .mode-switch__option--standard {
+                color: rgb(226 232 240 / 0.85);
+        }
+
+        .mode-switch__option--epic {
+                color: rgb(226 232 240 / 0.68);
+        }
+
+        .mode-switch__toggle--epic .mode-switch__option--standard {
+                color: rgb(226 232 240 / 0.6);
+        }
+
+        .mode-switch__toggle--epic .mode-switch__option--epic {
+                color: rgb(244 114 182 / 0.9);
+        }
+
+        .export-button {
+                display: inline-flex;
+                justify-content: center;
+                align-items: center;
+                gap: 0.4rem;
+                padding: 0.55rem 1.1rem;
+                border-radius: 0.9rem;
+                border: 1px solid rgb(148 163 184 / 0.35);
+                background: linear-gradient(135deg, rgb(59 130 246 / 0.18), rgb(14 116 144 / 0.28));
+                color: rgb(191 219 254 / 0.92);
+                font-size: 0.82rem;
+                font-weight: 600;
+                letter-spacing: 0.04em;
+                text-transform: uppercase;
+                cursor: pointer;
+                transition: transform 150ms ease, box-shadow 150ms ease, border-color 150ms ease, background 150ms ease;
+        }
+
+        .export-button:hover:not(:disabled) {
+                transform: translateY(-1px);
+                border-color: rgb(148 163 184 / 0.6);
+                background: linear-gradient(135deg, rgb(59 130 246 / 0.26), rgb(14 116 144 / 0.4));
+                box-shadow: 0 12px 25px rgb(59 130 246 / 0.25);
+        }
+
+        .export-button:focus-visible {
+                outline: 2px solid rgb(96 165 250 / 0.8);
+                outline-offset: 2px;
+        }
+
+        .export-button:disabled {
+                opacity: 0.65;
+                cursor: wait;
+                box-shadow: none;
+        }
+
+        @media (max-width: 40rem) {
+                .control-panel {
+                        width: 100%;
+                }
         }
 
         .diagram {
