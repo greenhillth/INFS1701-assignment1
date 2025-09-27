@@ -12,6 +12,13 @@ export type NodeType =
         | 'storage'
         | 'db';
 
+export type NodeNetworkProfile = {
+        ipAddress?: string;
+        subnet?: string;
+        macAddress?: string;
+        notes?: string;
+};
+
 export type DeviceTemplate = {
         /** Unique key within the device library */
         templateId: string;
@@ -19,6 +26,7 @@ export type DeviceTemplate = {
         label: string;
         description: string;
         size?: number;
+        network?: NodeNetworkProfile;
 };
 
 export type AbsolutePosition = {
@@ -66,6 +74,7 @@ export type NodeInstance = {
         zoneId?: string;
         localPosition?: { x: number; y: number };
         layoutHints?: LayoutHints;
+        network?: NodeNetworkProfile;
 };
 
 export type Link = {
@@ -115,6 +124,7 @@ export type LayoutSettings = {
         maxNodeSize?: number;
         minNodeScale?: number;
         linkStyle?: LinkAppearance;
+        routeStyle?: RouteHighlightAppearance;
 };
 
 export type DevicePlacement = {
@@ -151,10 +161,42 @@ export type ResolvedLinkStyle = {
         glowBlur: number;
 };
 
+export type RouteGradientStop = {
+        offset: number;
+        color: string;
+};
+
+export type RouteHighlightAppearance = {
+        gradientStops?: RouteGradientStop[];
+        animationDistance?: number;
+        animationDuration?: number;
+        highlightWidthMultiplier?: number;
+        solidDashArray?: string;
+        dashedDashArray?: string;
+        glowColor?: string;
+        glowBlur?: number;
+        fadeOutDelay?: number;
+        fadeOutDuration?: number;
+};
+
+export type ResolvedRouteHighlightStyle = {
+        gradientStops: RouteGradientStop[];
+        animationDistance: number;
+        animationDuration: number;
+        highlightWidthMultiplier: number;
+        solidDashArray: string;
+        dashedDashArray: string;
+        glowColor: string;
+        glowBlur: number;
+        fadeOutDelay: number;
+        fadeOutDuration: number;
+};
+
 export type FlowLayout = {
         nodes: NodeInstance[];
         links: Link[];
         zones: ComputedZone[];
         canvas: CanvasMetrics;
         linkStyle: ResolvedLinkStyle;
+        routeStyle: ResolvedRouteHighlightStyle;
 };

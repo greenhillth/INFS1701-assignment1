@@ -1,5 +1,6 @@
 <script lang="ts">
         import NodeCard from '$lib/components/NodeCard.svelte';
+        import { onDestroy } from 'svelte';
         import type { FlowLayout } from './types';
 
         let { layout } = $props<{ layout: FlowLayout }>();
@@ -8,6 +9,14 @@
         const nodeLookup = Object.fromEntries(
                 layout.nodes.map((node: FlowLayout['nodes'][number]) => [node.id, node] as const)
         ) as Record<string, FlowLayout['nodes'][number]>;
+
+        const inboundLinkMap: Record<string, FlowLayout['links'][number][]> = {};
+        for (const link of layout.links) {
+                if (!inboundLinkMap[link.target]) {
+                        inboundLinkMap[link.target] = [];
+                }
+                inboundLinkMap[link.target].push(link);
+        }
 
         const linkStyle = layout.linkStyle ?? {};
         const linkStroke = linkStyle.stroke ?? 'rgb(148 163 184 / 0.75)';
@@ -19,10 +28,187 @@
         const linkLinejoin = linkStyle.linejoin ?? 'round';
         const linkGlowColor = linkStyle.glowColor;
         const linkGlowBlur = linkStyle.glowBlur ?? 0;
+        const routeStyle = layout.routeStyle;
+        const routeGradientStops = routeStyle.gradientStops;
+        const routeAnimationDistance = routeStyle.animationDistance;
+        const routeAnimationDuration = routeStyle.animationDuration;
+        const routeGlowColor = routeStyle.glowColor;
+        const routeGlowBlur = routeStyle.glowBlur;
+        const routeSolidDashArray = routeStyle.solidDashArray;
+        const routeDashedDashArray = routeStyle.dashedDashArray;
+        const routeFadeOutDelay = routeStyle.fadeOutDelay;
+        const routeFadeOutDuration = routeStyle.fadeOutDuration;
+        const linkHighlightWidth = linkWidth * routeStyle.highlightWidthMultiplier;
+        const routeGradientId = 'canvas-route-gradient';
+        const svgStyleDeclarations = [
+                `opacity:${linkOpacity}`,
+                linkGlowColor ? `filter:drop-shadow(0 0 ${linkGlowBlur}px ${linkGlowColor})` : ''
+        ]
+                .filter(Boolean)
+                .join(';');
 
         const toPercent = (value: number, total: number) => (total === 0 ? 0 : (value / total) * 100);
         const xPercent = (value: number) => toPercent(value, layout.canvas.width);
         const yPercent = (value: number) => toPercent(value, layout.canvas.height);
+
+        const getTooltipTransform = (
+                horizontal: 'left' | 'center' | 'right',
+                vertical: 'above' | 'below'
+        ) => {
+                const verticalComponent = vertical === 'above' ? 'calc(-100% - 1.25rem)' : '1.25rem';
+                const horizontalComponent =
+                        horizontal === 'left' ? '0%' : horizontal === 'right' ? '-100%' : '-50%';
+                return `translate(${horizontalComponent}, ${verticalComponent})`;
+        };
+
+        const findRouteToInternet = (startId: string) => {
+                const visited = new Set<string>();
+                const queue: Array<{
+                        nodeId: string;
+                        linkIds: string[];
+                        nodeTrail: string[];
+                }> = [
+                        {
+                                nodeId: startId,
+                                linkIds: [],
+                                nodeTrail: [startId]
+                        }
+                ];
+
+                while (queue.length > 0) {
+                        const current = queue.shift();
+                        if (!current || visited.has(current.nodeId)) {
+                                continue;
+                        }
+
+                        visited.add(current.nodeId);
+
+                        const node = nodeLookup[current.nodeId];
+                        if (node?.type === 'internet') {
+                                return current;
+                        }
+
+                        const upstreamLinks = inboundLinkMap[current.nodeId] ?? [];
+                        for (const link of upstreamLinks) {
+                                const nextNodeId = link.source;
+                                const linkIdentifier = `${link.source}__${link.target}`;
+                                const nextTrail = current.nodeTrail.includes(nextNodeId)
+                                        ? current.nodeTrail
+                                        : [nextNodeId, ...current.nodeTrail];
+
+                                queue.push({
+                                        nodeId: nextNodeId,
+                                        linkIds: [linkIdentifier, ...current.linkIds],
+                                        nodeTrail: nextTrail
+                                });
+                        }
+                }
+
+                return { nodeId: startId, linkIds: [], nodeTrail: [startId] };
+        };
+
+        const tooltipId = 'canvas-node-tooltip';
+
+        let hoveredNodeId = $state<string | null>(null);
+        let hoveredNode = $state<FlowLayout['nodes'][number] | null>(null);
+        let activeRouteLinkIds = $state<Set<string>>(new Set());
+        let activeRouteNodeIds = $state<Set<string>>(new Set());
+        let fadingRouteLinkIds = $state<Set<string>>(new Set());
+        let tooltipLeft = $state(0);
+        let tooltipTop = $state(0);
+        let tooltipTransform = $state(getTooltipTransform('center', 'above'));
+
+        const computeSubnetMask = (subnet: string | undefined): string | null => {
+                if (!subnet) return null;
+
+                const [, prefixText] = subnet.split('/');
+                if (!prefixText) return null;
+
+                const prefix = Number.parseInt(prefixText, 10);
+                if (!Number.isFinite(prefix) || prefix < 0 || prefix > 32) {
+                        return null;
+                }
+
+                if (prefix === 0) {
+                        return '0.0.0.0';
+                }
+
+                const mask = ((~0 << (32 - prefix)) >>> 0) >>> 0;
+                const octets = [24, 16, 8, 0].map((shift) => ((mask >>> shift) & 255).toString());
+                return octets.join('.');
+        };
+
+        let hoveredSubnetMask = $state<string | null>(null);
+
+        let fadeTimeout: ReturnType<typeof setTimeout> | null = null;
+
+        const clearFadeTimer = () => {
+                if (fadeTimeout) {
+                        clearTimeout(fadeTimeout);
+                        fadeTimeout = null;
+                }
+        };
+
+        const beginRouteFadeOut = () => {
+                clearFadeTimer();
+
+                if (activeRouteLinkIds.size === 0) {
+                        fadingRouteLinkIds = new Set();
+                        return;
+                }
+
+                const linksToFade = new Set(activeRouteLinkIds);
+                fadingRouteLinkIds = linksToFade;
+
+                fadeTimeout = setTimeout(() => {
+                        fadingRouteLinkIds = new Set();
+                        fadeTimeout = null;
+                }, (routeFadeOutDelay + routeFadeOutDuration) * 1000);
+        };
+
+        const handleNodeEnter = (node: FlowLayout['nodes'][number]) => {
+                clearFadeTimer();
+                fadingRouteLinkIds = new Set();
+
+                hoveredNodeId = node.id;
+                hoveredNode = node;
+                hoveredSubnetMask = computeSubnetMask(node.network?.subnet);
+
+                const leftPercent = xPercent(node.x);
+                tooltipLeft = leftPercent;
+                const tooltipAlignment = leftPercent < 20 ? 'left' : leftPercent > 80 ? 'right' : 'center';
+
+                const topPercent = yPercent(node.y);
+                tooltipTop = topPercent;
+                const tooltipPlacement = topPercent < 22 ? 'below' : 'above';
+                tooltipTransform = getTooltipTransform(tooltipAlignment, tooltipPlacement);
+
+                const route = findRouteToInternet(node.id);
+                activeRouteLinkIds = new Set(route.linkIds);
+                activeRouteNodeIds = new Set(route.nodeTrail);
+        };
+
+        const clearHover = () => {
+                beginRouteFadeOut();
+
+                hoveredNodeId = null;
+                hoveredNode = null;
+                hoveredSubnetMask = null;
+                activeRouteLinkIds = new Set();
+                activeRouteNodeIds = new Set();
+                tooltipTransform = getTooltipTransform('center', 'above');
+        };
+
+        const handleNodeKey = (event: KeyboardEvent, node: FlowLayout['nodes'][number]) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        handleNodeEnter(node);
+                }
+
+                if (event.key === 'Escape') {
+                        clearHover();
+                }
+        };
 
         const getOrthogonalPath = (
                 source: FlowLayout['nodes'][number],
@@ -41,21 +227,59 @@
         export function getCanvasElement() {
                 return canvasRef;
         }
+
+        onDestroy(() => {
+                clearFadeTimer();
+        });
 </script>
 
 <div
         class="canvas"
         style:aspect-ratio={`${layout.canvas.width} / ${layout.canvas.height}`}
         style:--canvas-scale={`${layout.canvas.scale}`}
+        style:--route-fade-delay={`${routeFadeOutDelay}s`}
+        style:--route-fade-duration={`${routeFadeOutDuration}s`}
         bind:this={canvasRef}
 >
         <svg
                 class="canvas__links"
                 viewBox={`0 0 ${layout.canvas.width} ${layout.canvas.height}`}
                 preserveAspectRatio="none"
-                style={`opacity:${linkOpacity};${linkGlowColor ? ` filter:drop-shadow(0 0 ${linkGlowBlur}px ${linkGlowColor});` : ''}`}
+                style={svgStyleDeclarations}
         >
+                <defs>
+                        <linearGradient id={routeGradientId} gradientUnits="userSpaceOnUse">
+                                {#each routeGradientStops as stop, index (`${stop.offset}-${index}`)}
+                                        <stop offset={`${stop.offset * 100}%`} stop-color={stop.color} />
+                                {/each}
+                                <animateTransform
+                                        attributeName="gradientTransform"
+                                        type="translate"
+                                        from={`-${routeAnimationDistance} 0`}
+                                        to={`${routeAnimationDistance} 0`}
+                                        dur={`${routeAnimationDuration}s`}
+                                        repeatCount="indefinite"
+                                />
+                        </linearGradient>
+                </defs>
                 {#each layout.links as link (link.source + link.target)}
+                        {@const linkId = `${link.source}__${link.target}`}
+                        {@const isActive = activeRouteLinkIds.has(linkId)}
+                        {@const isFading = fadingRouteLinkIds.has(linkId)}
+                        {@const isHighlighted = isActive || isFading}
+                        {@const strokeColor = isHighlighted
+                                ? `url(#${routeGradientId})`
+                                : link.dashed
+                                        ? linkDashedStroke
+                                        : linkStroke}
+                        {@const dashArray = isHighlighted
+                                ? link.dashed
+                                        ? routeDashedDashArray
+                                        : routeSolidDashArray
+                                : link.dashed
+                                  ? linkDashArray
+                                  : undefined}
+                        {@const strokeWidth = isHighlighted ? linkHighlightWidth : linkWidth}
                         {#if nodeLookup[link.source] && nodeLookup[link.target]}
                                 {#if (link.routing ?? 'straight') === 'orthogonal'}
                                         <path
@@ -65,12 +289,22 @@
                                                         link.orientation
                                                 )}
                                                 class={`canvas__link${link.dashed ? ' canvas__link--dashed' : ''}`}
+                                                class:canvas__link--route={isHighlighted}
+                                                class:canvas__link--fading={isFading}
                                                 fill="none"
-                                                stroke={link.dashed ? linkDashedStroke : linkStroke}
-                                                stroke-width={linkWidth}
+                                                stroke={strokeColor}
+                                                stroke-width={strokeWidth}
                                                 stroke-linecap={linkLinecap}
                                                 stroke-linejoin={linkLinejoin}
-                                                stroke-dasharray={link.dashed ? linkDashArray : undefined}
+                                                stroke-dasharray={dashArray}
+                                                stroke-dashoffset={isHighlighted ? 0 : undefined}
+                                                style:animation-duration={isHighlighted
+                                                        ? `${routeAnimationDuration}s`
+                                                        : undefined}
+                                                style:animation-play-state={isFading ? 'paused' : undefined}
+                                                style:filter={isHighlighted
+                                                        ? `drop-shadow(0 0 ${routeGlowBlur}px ${routeGlowColor})`
+                                                        : undefined}
                                         />
                                 {:else}
                                         <line
@@ -79,11 +313,21 @@
                                                 x2={nodeLookup[link.target].x}
                                                 y2={nodeLookup[link.target].y}
                                                 class={`canvas__link${link.dashed ? ' canvas__link--dashed' : ''}`}
-                                                stroke={link.dashed ? linkDashedStroke : linkStroke}
-                                                stroke-width={linkWidth}
+                                                class:canvas__link--route={isHighlighted}
+                                                class:canvas__link--fading={isFading}
+                                                stroke={strokeColor}
+                                                stroke-width={strokeWidth}
                                                 stroke-linecap={linkLinecap}
                                                 stroke-linejoin={linkLinejoin}
-                                                stroke-dasharray={link.dashed ? linkDashArray : undefined}
+                                                stroke-dasharray={dashArray}
+                                                stroke-dashoffset={isHighlighted ? 0 : undefined}
+                                                style:animation-duration={isHighlighted
+                                                        ? `${routeAnimationDuration}s`
+                                                        : undefined}
+                                                style:animation-play-state={isFading ? 'paused' : undefined}
+                                                style:filter={isHighlighted
+                                                        ? `drop-shadow(0 0 ${routeGlowBlur}px ${routeGlowColor})`
+                                                        : undefined}
                                         />
                                 {/if}
                         {/if}
@@ -105,9 +349,18 @@
         {#each layout.nodes as node (node.id)}
                 <div
                         class="canvas__node"
+                        class:canvas__node--active={activeRouteNodeIds.has(node.id)}
                         style:left={`${xPercent(node.x)}%`}
                         style:top={`${yPercent(node.y)}%`}
                         style:transform={`translate(-50%, -50%) scale(${node.scale ?? 1})`}
+                        tabindex="0"
+                        role="button"
+                        aria-describedby={hoveredNodeId === node.id ? tooltipId : undefined}
+                        onmouseenter={() => handleNodeEnter(node)}
+                        onmouseleave={clearHover}
+                        onfocus={() => handleNodeEnter(node)}
+                        onblur={clearHover}
+                        onkeydown={(event) => handleNodeKey(event, node)}
                 >
                         <NodeCard
                                 type={node.type}
@@ -117,6 +370,50 @@
                         />
                 </div>
         {/each}
+
+        {#if hoveredNode}
+                <div
+                        class="canvas__tooltip"
+                        style:left={`${tooltipLeft}%`}
+                        style:top={`${tooltipTop}%`}
+                        style:transform={tooltipTransform}
+                        id={tooltipId}
+                >
+                        <div class="canvas__tooltip-card" role="presentation">
+                                <span class="canvas__tooltip-title">{hoveredNode.label}</span>
+                                <p class="canvas__tooltip-description">{hoveredNode.description}</p>
+
+                                <dl class="canvas__tooltip-meta">
+                                        <div>
+                                                <dt>IP Address</dt>
+                                                <dd>
+                                                        <span>{hoveredNode.network?.ipAddress ?? '—'}</span>
+                                                        {#if hoveredNode.network?.subnet}
+                                                                <span class="canvas__tooltip-meta-secondary">
+                                                                        Subnet: {hoveredNode.network.subnet}
+                                                                </span>
+                                                                {#if hoveredSubnetMask}
+                                                                        <span class="canvas__tooltip-meta-secondary">
+                                                                                Mask: {hoveredSubnetMask}
+                                                                        </span>
+                                                                {/if}
+                                                        {/if}
+                                                </dd>
+                                        </div>
+                                        <div>
+                                                <dt>MAC</dt>
+                                                <dd>
+                                                        <span>{hoveredNode.network?.macAddress ?? '—'}</span>
+                                                </dd>
+                                        </div>
+                                </dl>
+
+                                {#if hoveredNode.network?.notes}
+                                        <p class="canvas__tooltip-notes">{hoveredNode.network.notes}</p>
+                                {/if}
+                        </div>
+                </div>
+        {/if}
 </div>
 
 <style>
@@ -163,5 +460,116 @@
                 z-index: 10;
                 transform-origin: center;
                 will-change: transform;
+                cursor: pointer;
+        }
+
+        .canvas__node:focus {
+                outline: none;
+        }
+
+        .canvas__node--active :global(.card) {
+                box-shadow: 0 0 0 1.5px rgb(74 222 128 / 0.65), 0 18px 28px rgb(21 128 61 / 0.45);
+        }
+
+        .canvas__node:focus-visible :global(.card) {
+                outline: 2px solid rgb(74 222 128 / 0.75);
+                outline-offset: 4px;
+        }
+
+        .canvas__link--route {
+                animation: canvas-route-flow 2.4s linear infinite;
+                opacity: 1;
+                transition: opacity var(--route-fade-duration, 0.5s) linear;
+                transition-delay: 0s;
+        }
+
+        .canvas__link--route.canvas__link--fading {
+                opacity: 0;
+                transition-delay: var(--route-fade-delay, 0.25s);
+        }
+
+        @keyframes canvas-route-flow {
+                from {
+                        stroke-dashoffset: 0;
+                }
+                to {
+                        stroke-dashoffset: -180;
+                }
+        }
+
+        .canvas__tooltip {
+                position: absolute;
+                min-width: 16rem;
+                max-width: min(26rem, 90vw);
+                width: max-content;
+                pointer-events: none;
+                z-index: 40;
+        }
+
+        .canvas__tooltip-card {
+                background: radial-gradient(circle at top, rgb(15 118 110 / 0.12), rgb(15 23 42 / 0.88));
+                border: 1px solid rgb(45 212 191 / 0.35);
+                border-radius: 1rem;
+                padding: 1rem 1.1rem 1.1rem;
+                color: rgb(226 232 240);
+                backdrop-filter: blur(6px);
+                box-shadow: 0 24px 48px rgb(15 23 42 / 0.55);
+        }
+
+        .canvas__tooltip-title {
+                font-size: 1rem;
+                font-weight: 600;
+                letter-spacing: 0.01em;
+                color: rgb(240 253 244);
+        }
+
+        .canvas__tooltip-description {
+                margin: 0.45rem 0 0.75rem;
+                font-size: 0.8rem;
+                color: rgb(226 232 240 / 0.78);
+                line-height: 1.4;
+        }
+
+        .canvas__tooltip-meta {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+                gap: 0.6rem 1rem;
+                margin: 0 0 0.85rem;
+        }
+
+        .canvas__tooltip-meta div {
+                display: flex;
+                flex-direction: column;
+                gap: 0.2rem;
+        }
+
+        .canvas__tooltip-meta dt {
+                font-size: 0.65rem;
+                text-transform: uppercase;
+                letter-spacing: 0.08em;
+                color: rgb(190 242 100 / 0.75);
+        }
+
+        .canvas__tooltip-meta dd {
+                margin: 0;
+                font-size: 0.82rem;
+                font-weight: 500;
+                color: rgb(226 232 240 / 0.92);
+                display: flex;
+                flex-direction: column;
+                gap: 0.25rem;
+                overflow-wrap: anywhere;
+        }
+
+        .canvas__tooltip-meta-secondary {
+                font-size: 0.72rem;
+                font-weight: 400;
+                color: rgb(148 163 184 / 0.85);
+        }
+
+        .canvas__tooltip-notes {
+                margin: 0;
+                font-size: 0.75rem;
+                color: rgb(163 230 53 / 0.8);
         }
 </style>

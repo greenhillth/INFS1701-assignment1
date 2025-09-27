@@ -25,12 +25,9 @@
                 size?: number;
         }>();
 
-        const handleHover = () => {
-                // Placeholder: attach hover interactions (tooltips, highlights, etc.) here.
-        };
 </script>
 
-<div class="card" role="group" title={description} onmouseenter={handleHover}>
+<div class="card" role="group">
         <Icon {type} {size} title={label} />
         <div class="card__body">
                 <span class="card__label">{label}</span>

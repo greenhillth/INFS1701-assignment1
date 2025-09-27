@@ -6,8 +6,11 @@ import type {
         LayoutBlueprint,
         LayoutSettings,
         NodeInstance,
+        NodeNetworkProfile,
         Positioning,
         ResolvedLinkStyle,
+        ResolvedRouteHighlightStyle,
+        RouteGradientStop,
         Spacing,
         ZoneDefinition
 } from './types';
@@ -161,12 +164,96 @@ const normaliseLinkStyle = (style: LayoutSettings['linkStyle']): ResolvedLinkSty
         glowBlur: style?.glowBlur ?? defaultLinkStyle.glowBlur
 });
 
+const defaultRouteStyle: ResolvedRouteHighlightStyle = {
+        gradientStops: [
+                { offset: 0, color: 'rgb(34 197 94 / 0)' },
+                { offset: 0.35, color: 'rgb(134 239 172 / 0.9)' },
+                { offset: 0.65, color: 'rgb(34 197 94 / 1)' },
+                { offset: 1, color: 'rgb(22 101 52 / 0)' }
+        ],
+        animationDistance: 40,
+        animationDuration: 2.4,
+        highlightWidthMultiplier: 1.85,
+        solidDashArray: '26 20',
+        dashedDashArray: '6 14',
+        glowColor: 'rgb(34 197 94 / 0.75)',
+        glowBlur: 10,
+        fadeOutDelay: 0.25,
+        fadeOutDuration: 0.5
+};
+
+const sanitiseStops = (stops: RouteGradientStop[] | undefined): RouteGradientStop[] => {
+        if (!stops || stops.length === 0) {
+                return defaultRouteStyle.gradientStops.map((stop) => ({ ...stop }));
+        }
+
+        return stops
+                .map((stop) => ({
+                        offset:
+                                typeof stop.offset === 'number' && Number.isFinite(stop.offset)
+                                        ? Math.min(Math.max(stop.offset, 0), 1)
+                                        : 0,
+                        color: stop.color ?? defaultRouteStyle.gradientStops[0]?.color ?? '#ffffff'
+                }))
+                .sort((a, b) => a.offset - b.offset);
+};
+
+const normaliseRouteStyle = (
+        style: LayoutSettings['routeStyle']
+): ResolvedRouteHighlightStyle => ({
+        gradientStops: sanitiseStops(style?.gradientStops),
+        animationDistance:
+                style?.animationDistance !== undefined
+                        ? Math.max(Math.abs(style.animationDistance), 0)
+                        : defaultRouteStyle.animationDistance,
+        animationDuration:
+                style?.animationDuration !== undefined
+                        ? Math.max(style.animationDuration, 0.1)
+                        : defaultRouteStyle.animationDuration,
+        highlightWidthMultiplier:
+                style?.highlightWidthMultiplier !== undefined
+                        ? Math.max(style.highlightWidthMultiplier, 1)
+                        : defaultRouteStyle.highlightWidthMultiplier,
+        solidDashArray: style?.solidDashArray ?? defaultRouteStyle.solidDashArray,
+        dashedDashArray: style?.dashedDashArray ?? defaultRouteStyle.dashedDashArray,
+        glowColor: style?.glowColor ?? defaultRouteStyle.glowColor,
+        glowBlur:
+                style?.glowBlur !== undefined
+                        ? Math.max(style.glowBlur, 0)
+                        : defaultRouteStyle.glowBlur,
+        fadeOutDelay:
+                style?.fadeOutDelay !== undefined
+                        ? Math.max(style.fadeOutDelay, 0)
+                        : defaultRouteStyle.fadeOutDelay,
+        fadeOutDuration:
+                style?.fadeOutDuration !== undefined
+                        ? Math.max(style.fadeOutDuration, 0)
+                        : defaultRouteStyle.fadeOutDuration
+});
+
 const clamp = (value: number, min: number, max?: number): number => {
         if (max !== undefined) {
                 return Math.min(Math.max(value, min), max);
         }
 
         return Math.max(value, min);
+};
+
+const mergeNetworkProfiles = (
+        base: NodeNetworkProfile | undefined,
+        overrides: NodeNetworkProfile | undefined
+): NodeNetworkProfile | undefined => {
+        if (!base && !overrides) {
+                return undefined;
+        }
+
+        const merged: NodeNetworkProfile = {
+                ...(base ?? {}),
+                ...(overrides ?? {})
+        };
+
+        const hasValue = Object.values(merged).some((value) => value !== undefined && value !== '');
+        return hasValue ? merged : undefined;
 };
 
 const computeZoneBounds = (
@@ -268,6 +355,7 @@ export const instantiateLayout = (blueprint: LayoutBlueprint): FlowLayout => {
         const maxNodeSize = settings?.maxNodeSize;
         const minNodeScale = settings?.minNodeScale ?? 0.6;
         const linkStyle = normaliseLinkStyle(settings?.linkStyle);
+        const routeStyle = normaliseRouteStyle(settings?.routeStyle);
 
         const resolvedNodes: NodeInstance[] = [];
         const resolvedMap: Record<string, NodeInstance> = {};
@@ -332,6 +420,8 @@ export const instantiateLayout = (blueprint: LayoutBlueprint): FlowLayout => {
                                   }
                                 : overrideHints;
 
+                const network = mergeNetworkProfiles(template.network, placement.overrides?.network);
+
                 const node: NodeInstance = {
                         id: nodeId,
                         templateId: template.templateId,
@@ -343,7 +433,8 @@ export const instantiateLayout = (blueprint: LayoutBlueprint): FlowLayout => {
                         y: absolutePosition.y,
                         zoneId: placement.zone,
                         localPosition,
-                        layoutHints
+                        layoutHints,
+                        network
                 };
 
                 resolvedNodes.push(node);
@@ -543,6 +634,7 @@ export const instantiateLayout = (blueprint: LayoutBlueprint): FlowLayout => {
                         scale,
                         padding: scaledPadding
                 },
-                linkStyle
+                linkStyle,
+                routeStyle
         };
 };
