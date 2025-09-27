@@ -38,14 +38,14 @@ const blueprint: LayoutBlueprint = {
                         id: 'core',
                         label: 'Core Network & Security',
                         origin: { x: 55, y: 6 },
-                        padding: { top: 8, right: 18, bottom: 10, left: 18 },
-                        minWidth: 34,
-                        minHeight: 36
+                        padding: { top: 8, right: 10, bottom: 8, left: 10 },
+                        minWidth: 22,
+                        minHeight: 20
                 },
                 {
                         id: 'dc',
                         label: 'Data Centre / DMZ',
-                        origin: { x: 64, y: 60 },
+                        origin: { x: 64, y: 40 },
                         padding: { top: 8, right: 14, bottom: 10, left: 14 },
                         minWidth: 34,
                         minHeight: 40
@@ -146,7 +146,7 @@ const blueprint: LayoutBlueprint = {
                                 label: 'WLC',
                                 description: 'Controls SSIDs, RF policies and roaming services for APs.'
                         },
-                        position: { reference: 'core-switch', offsetX: 18, offsetY: 0 }
+                        position: { reference: 'core-switch', offsetX: 0, offsetY: 10 }
                 }),
                 ...stackDevices(
                         'vertical',
