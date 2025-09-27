@@ -322,6 +322,16 @@ export const instantiateLayout = (blueprint: LayoutBlueprint): FlowLayout => {
                         absolutePosition = ensureAbsolute(placement.position, resolvedMap, anchorPositions);
                 }
 
+                const overrideHints = placement.overrides?.layoutHints;
+                const layoutHints =
+                        placement.position.kind === 'relative'
+                                ? {
+                                          ...overrideHints,
+                                          lockX: overrideHints?.lockX ?? true,
+                                          lockY: overrideHints?.lockY ?? true
+                                  }
+                                : overrideHints;
+
                 const node: NodeInstance = {
                         id: nodeId,
                         templateId: template.templateId,
@@ -333,7 +343,7 @@ export const instantiateLayout = (blueprint: LayoutBlueprint): FlowLayout => {
                         y: absolutePosition.y,
                         zoneId: placement.zone,
                         localPosition,
-                        layoutHints: placement.overrides?.layoutHints
+                        layoutHints
                 };
 
                 resolvedNodes.push(node);

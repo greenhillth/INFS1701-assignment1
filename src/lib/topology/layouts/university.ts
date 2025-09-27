@@ -2,7 +2,7 @@ import { instantiateLayout, placeDevice, stackDevices } from '../layoutBuilder';
 import type { LayoutBlueprint } from '../types';
 
 const settings: LayoutBlueprint['settings'] = {
-        canvasPadding: { top: 1, right: 1, bottom: 1, left: 1 },
+        canvasPadding: { top: 1, right: 4, bottom: 1, left: 4 },
         maxWidth: 160,
         zoneSpacing: { horizontal: 2, vertical: 2 },
         nodeSpacing: 10,
@@ -29,57 +29,41 @@ const blueprint: LayoutBlueprint = {
                 {
                         id: 'edge',
                         label: 'Edge & Perimeter',
-                        origin: { x: 6, y: 6 },
+                        origin: { x: 0, y: 0 },
                         padding: { top: 8, right: 10, bottom: 8, left: 10 },
-                        minWidth: 22,
+                        minWidth: 20,
                         minHeight: 10
                 },
                 {
                         id: 'core',
                         label: 'Core Network & Security',
-                        origin: { x: 55, y: 6 },
-                        padding: { top: 8, right: 10, bottom: 8, left: 10 },
+                        origin: { x: 50, y: 0 },
+                        padding: { top: 8, right: 10, bottom: 8, left: 8 },
                         minWidth: 22,
                         minHeight: 20
                 },
                 {
                         id: 'dc',
                         label: 'Data Centre / DMZ',
-                        origin: { x: 64, y: 40 },
-                        padding: { top: 8, right: 14, bottom: 10, left: 14 },
+                        origin: { x: 30, y: 60 },
+                        padding: { top: 8, right: 10, bottom: 8, left: 10 },
                         minWidth: 34,
                         minHeight: 40
                 },
                 {
                         id: 'admin',
                         label: 'Administration Building',
-                        origin: { x: 18, y: 60 },
-                        padding: { top: 8, right: 12, bottom: 10, left: 12 },
-                        minWidth: 30,
-                        minHeight: 36
-                },
-                {
-                        id: 'library',
-                        label: 'Library & Learning Commons',
-                        origin: { x: 38, y: 60 },
-                        padding: { top: 8, right: 12, bottom: 10, left: 12 },
-                        minWidth: 30,
-                        minHeight: 36
+                        origin: { x: 0, y: 40 },
+                        padding: { top: 8, right: 10, bottom: 8, left: 10 },
+                        minWidth: 20,
+                        minHeight: 20
                 },
                 {
                         id: 'labs',
                         label: 'Engineering Labs',
-                        origin: { x: 58, y: 60 },
-                        padding: { top: 8, right: 12, bottom: 10, left: 12 },
+                        origin: { x: 50, y: 40 },
+                        padding: { top: 8, right: 10, bottom: 8, left: 10 },
                         minWidth: 30,
-                        minHeight: 36
-                },
-                {
-                        id: 'residence',
-                        label: 'Student Residence',
-                        origin: { x: 78, y: 60 },
-                        padding: { top: 8, right: 10, bottom: 10, left: 10 },
-                        minWidth: 28,
                         minHeight: 36
                 }
         ],
@@ -132,7 +116,7 @@ const blueprint: LayoutBlueprint = {
                                 description:
                                         'Aggregates distribution switches and provides high-speed inter-VLAN routing.'
                         },
-                        position: { reference: 'core-router', offsetX: 5, offsetY: 0 }
+                        position: { reference: 'core-router', offsetX: 10, offsetY: 8 }
                 }),
                 placeDevice('wirelessController', {
                         id: 'wlc',
@@ -141,7 +125,7 @@ const blueprint: LayoutBlueprint = {
                                 label: 'WLC',
                                 description: 'Controls SSIDs, RF policies and roaming services for APs.'
                         },
-                        position: { reference: 'core-switch', offsetX: 0, offsetY: 10 }
+                        position: { reference: 'core-router', offsetX: 20, offsetY: 0 }
                 }),
                 ...stackDevices(
                         'vertical',
@@ -262,60 +246,7 @@ const blueprint: LayoutBlueprint = {
                                         }
                                 }
                         ],
-                        { zone: 'admin', start: { x: -10, y: 24 }, gap: rowGap }
-                ),
-                ...stackDevices(
-                        'vertical',
-                        [
-                                {
-                                        template: 'distributionSwitch',
-                                        id: 'library-distribution',
-                                        overrides: {
-                                                label: 'Library Distribution',
-                                                description: 'Backbone connectivity for the library complex.'
-                                        }
-                                },
-                                {
-                                        template: 'accessSwitch',
-                                        id: 'library-access',
-                                        overrides: {
-                                                label: 'Library Access Switch',
-                                                description: 'Provides wired ports for library facilities.'
-                                        }
-                                }
-                        ],
-                        { zone: 'library', start: { x: 0, y: 0 }, gap: nodeGap }
-                ),
-                placeDevice('accessPoint', {
-                        id: 'library-ap',
-                        zone: 'library',
-                        overrides: {
-                                label: 'Library Atrium AP',
-                                description: 'High-density wireless coverage for study areas.'
-                        },
-                        position: { reference: 'library-access', offsetX: 16, offsetY: 0 }
-                }),
-                ...stackDevices(
-                        'horizontal',
-                        [
-                                {
-                                        template: 'endpointCluster',
-                                        id: 'library-pcs',
-                                        overrides: {
-                                                label: 'Study PCs',
-                                                description: 'Open-access computers for students and visitors.'
-                                        }
-                                },
-                                {
-                                        template: 'endpointCluster',
-                                        id: 'library-kiosks',
-                                        overrides: {
-                                                label: 'Self-check Kiosks',
-                                                description: 'Self-service kiosks for borrowing and account management.'
-                                        }
-                                }
-                        ],
-                        { zone: 'library', start: { x: -10, y: 24 }, gap: rowGap }
+                        { zone: 'admin', start: { x: 0, y: 24 }, gap: rowGap }
                 ),
                 ...stackDevices(
                         'vertical',
@@ -368,72 +299,19 @@ const blueprint: LayoutBlueprint = {
                                         }
                                 }
                         ],
-                        { zone: 'labs', start: { x: -10, y: 24 }, gap: rowGap }
-                ),
-                ...stackDevices(
-                        'vertical',
-                        [
-                                {
-                                        template: 'distributionSwitch',
-                                        id: 'residence-distribution',
-                                        overrides: {
-                                                label: 'Residence Distribution',
-                                                description: 'Feeds residence halls with redundant uplinks.'
-                                        }
-                                },
-                                {
-                                        template: 'accessSwitch',
-                                        id: 'residence-access',
-                                        overrides: {
-                                                label: 'Residence Access Switch',
-                                                description: 'Provides wired connectivity for hall infrastructure.'
-                                        }
-                                }
-                        ],
-                        { zone: 'residence', start: { x: 0, y: 0 }, gap: nodeGap }
-                ),
-                placeDevice('accessPoint', {
-                        id: 'residence-ap',
-                        zone: 'residence',
-                        overrides: {
-                                label: 'Hallway Mesh AP',
-                                description: 'Mesh-capable AP extending Wi-Fi into residential rooms.'
-                        },
-                        position: { reference: 'residence-access', offsetX: 16, offsetY: 0 }
-                }),
-                ...stackDevices(
-                        'horizontal',
-                        [
-                                {
-                                        template: 'endpointCluster',
-                                        id: 'residence-gaming',
-                                        overrides: {
-                                                label: 'Student Consoles',
-                                                description: 'Gaming consoles on the residence entertainment network.'
-                                        }
-                                },
-                                {
-                                        template: 'endpointCluster',
-                                        id: 'residence-laptops',
-                                        overrides: {
-                                                label: 'Student Laptops',
-                                                description: 'Personal laptops and tablets connecting via Wi-Fi.'
-                                        }
-                                }
-                        ],
-                        { zone: 'residence', start: { x: -10, y: 24 }, gap: rowGap }
+                        { zone: 'labs', start: { x: 0, y: 24 }, gap: rowGap }
                 )
         ],
         links: [
-                { source: 'isp', target: 'edge-modem', routing: 'orthogonal', orientation: 'horizontal-first' },
-                { source: 'edge-modem', target: 'perimeter-fw', routing: 'orthogonal', orientation: 'horizontal-first' },
-                { source: 'perimeter-fw', target: 'core-router', routing: 'orthogonal', orientation: 'horizontal-first' },
-                { source: 'core-router', target: 'core-switch', routing: 'orthogonal', orientation: 'horizontal-first' },
-                { source: 'core-router', target: 'dc-distribution', routing: 'orthogonal', orientation: 'horizontal-first' },
-                { source: 'core-switch', target: 'admin-distribution', routing: 'orthogonal', orientation: 'horizontal-first' },
-                { source: 'core-switch', target: 'library-distribution', routing: 'orthogonal', orientation: 'horizontal-first' },
-                { source: 'core-switch', target: 'labs-distribution', routing: 'orthogonal', orientation: 'horizontal-first' },
-                { source: 'core-switch', target: 'residence-distribution', routing: 'orthogonal', orientation: 'horizontal-first' },
+                { source: 'isp', target: 'edge-modem', routing: 'straight' },
+                { source: 'edge-modem', target: 'perimeter-fw', routing: 'straight' },
+                { source: 'perimeter-fw', target: 'core-router', routing: 'straight' },
+                { source: 'core-router', target: 'core-switch', routing: 'straight' },
+                { source: 'core-router', target: 'dc-distribution', routing: 'straight' },
+                { source: 'core-switch', target: 'admin-distribution', routing: 'straight' },
+                { source: 'core-switch', target: 'library-distribution', routing: 'straight' },
+                { source: 'core-switch', target: 'labs-distribution', routing: 'straight' },
+                { source: 'core-switch', target: 'residence-distribution', routing: 'straight' },
                 { source: 'core-switch', target: 'wlc' },
 
                 { source: 'dc-distribution', target: 'dmz-switch', routing: 'orthogonal', orientation: 'vertical-first' },
@@ -449,13 +327,6 @@ const blueprint: LayoutBlueprint = {
                 { source: 'admin-ap', target: 'admin-clients', dashed: true },
                 { source: 'admin-ap', target: 'admin-printers', dashed: true },
 
-                { source: 'library-distribution', target: 'library-access', routing: 'orthogonal', orientation: 'vertical-first' },
-                { source: 'library-access', target: 'library-pcs' },
-                { source: 'library-access', target: 'library-kiosks' },
-                { source: 'wlc', target: 'library-ap', dashed: true },
-                { source: 'library-ap', target: 'library-pcs', dashed: true },
-                { source: 'library-ap', target: 'library-kiosks', dashed: true },
-
                 { source: 'labs-distribution', target: 'labs-access', routing: 'orthogonal', orientation: 'vertical-first' },
                 { source: 'labs-access', target: 'labs-workstations' },
                 { source: 'labs-access', target: 'labs-iot' },
@@ -463,12 +334,6 @@ const blueprint: LayoutBlueprint = {
                 { source: 'labs-ap', target: 'labs-workstations', dashed: true },
                 { source: 'labs-ap', target: 'labs-iot', dashed: true },
 
-                { source: 'residence-distribution', target: 'residence-access', routing: 'orthogonal', orientation: 'vertical-first' },
-                { source: 'residence-access', target: 'residence-gaming' },
-                { source: 'residence-access', target: 'residence-laptops' },
-                { source: 'wlc', target: 'residence-ap', dashed: true },
-                { source: 'residence-ap', target: 'residence-gaming', dashed: true },
-                { source: 'residence-ap', target: 'residence-laptops', dashed: true }
         ]
 };
 
