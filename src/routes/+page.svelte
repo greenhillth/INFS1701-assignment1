@@ -46,8 +46,10 @@
                                 </label>
                         </div>
                 </header>
+        </div>
 
-                <section class="diagram">
+        <section class="diagram">
+                <div class="diagram__inner">
                         <div class="diagram__frame">
                                 <div class="diagram__canvas">
                                         <FlowCanvas {layout} />
@@ -64,8 +66,10 @@
                                         </div>
                                 </div>
                         </div>
-                </section>
+                </div>
+        </section>
 
+        <div class="page__inner">
                 <footer class="page__footer">
                         Toggle icons above — files are served from <code>/static/icons/…</code>
                 </footer>
@@ -82,7 +86,12 @@
         .page__inner {
                 margin: 0 auto;
                 max-width: 96rem;
-                padding: 3rem 2rem 4rem;
+                padding: 3rem 2rem;
+        }
+
+        .page__inner:last-of-type {
+                padding-top: 2rem;
+                padding-bottom: 4rem;
         }
 
         .page__header {
@@ -126,6 +135,16 @@
 
         .icon-toggle__input {
                 accent-color: #ec4899;
+        }
+
+        .diagram {
+                width: 100%;
+                padding: 0 clamp(1.5rem, 5vw, 3rem);
+                margin: 0 auto 2.5rem;
+        }
+
+        .diagram__inner {
+                width: 100%;
         }
 
         .diagram__frame {

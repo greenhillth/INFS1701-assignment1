@@ -2,10 +2,10 @@ import { instantiateLayout, placeDevice, stackDevices } from '../layoutBuilder';
 import type { LayoutBlueprint } from '../types';
 
 const settings: LayoutBlueprint['settings'] = {
-        canvasPadding: { top: 20, right: 24, bottom: 28, left: 24 },
-        maxWidth: 120,
-        zoneSpacing: { horizontal: 18, vertical: 24 },
-        nodeSpacing: 14,
+        canvasPadding: { top: 1, right: 1, bottom: 1, left: 1 },
+        maxWidth: 160,
+        zoneSpacing: { horizontal: 2, vertical: 2 },
+        nodeSpacing: 10,
         minNodeSize: 18,
         maxNodeSize: 44,
         minNodeScale: 0.65
@@ -23,7 +23,7 @@ const blueprint: LayoutBlueprint = {
                         origin: { x: 50, y: 6 },
                         padding: { top: 8, right: 10, bottom: 8, left: 10 },
                         minWidth: 22,
-                        minHeight: 28
+                        minHeight: 10
                 },
                 {
                         id: 'core',
@@ -76,7 +76,7 @@ const blueprint: LayoutBlueprint = {
         ],
         nodes: [
                 ...stackDevices(
-                        'vertical',
+                        'horizontal',
                         [
                                 {
                                         template: 'internetGateway',
@@ -421,10 +421,10 @@ const blueprint: LayoutBlueprint = {
                 )
         ],
         links: [
-                { source: 'isp', target: 'edge-modem', routing: 'orthogonal', orientation: 'vertical-first' },
-                { source: 'edge-modem', target: 'perimeter-fw', routing: 'orthogonal', orientation: 'vertical-first' },
-                { source: 'perimeter-fw', target: 'core-router', routing: 'orthogonal', orientation: 'vertical-first' },
-                { source: 'core-router', target: 'core-switch', routing: 'orthogonal', orientation: 'vertical-first' },
+                { source: 'isp', target: 'edge-modem', routing: 'orthogonal', orientation: 'horizontal-first' },
+                { source: 'edge-modem', target: 'perimeter-fw', routing: 'orthogonal', orientation: 'horizontal-first' },
+                { source: 'perimeter-fw', target: 'core-router', routing: 'orthogonal', orientation: 'horizontal-first' },
+                { source: 'core-router', target: 'core-switch', routing: 'orthogonal', orientation: 'horizontal-first' },
                 { source: 'core-router', target: 'dc-distribution', routing: 'orthogonal', orientation: 'horizontal-first' },
                 { source: 'core-switch', target: 'admin-distribution', routing: 'orthogonal', orientation: 'horizontal-first' },
                 { source: 'core-switch', target: 'library-distribution', routing: 'orthogonal', orientation: 'horizontal-first' },

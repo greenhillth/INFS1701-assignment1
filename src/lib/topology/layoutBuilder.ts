@@ -199,6 +199,7 @@ export type StackOptions = {
         zone?: string;
         start: { x: number; y: number };
         gap?: number;
+        alignAxis?: 'x' | 'y';
 };
 
 export const stackDevices = (
@@ -207,12 +208,24 @@ export const stackDevices = (
         options: StackOptions
 ): DevicePlacement[] => {
         const gap = options.gap ?? 12;
+        const alignAxis =
+                options.alignAxis ?? (direction === 'horizontal' ? 'y' : direction === 'vertical' ? 'x' : undefined);
 
         return items.map((item, index) =>
                 placeDevice(item.template, {
                         id: item.id,
                         zone: options.zone,
-                        overrides: item.overrides,
+                        overrides:
+                                alignAxis
+                                        ? {
+                                                ...item.overrides,
+                                                layoutHints: {
+                                                        ...(item.overrides?.layoutHints ?? {}),
+                                                        ...(alignAxis === 'x' ? { lockX: true } : {}),
+                                                        ...(alignAxis === 'y' ? { lockY: true } : {})
+                                                }
+                                        }
+                                        : item.overrides,
                         position: {
                                 x: options.start.x + (direction === 'horizontal' ? index * gap : 0),
                                 y: options.start.y + (direction === 'vertical' ? index * gap : 0)
@@ -293,7 +306,8 @@ export const instantiateLayout = (blueprint: LayoutBlueprint): FlowLayout => {
                         x: absolutePosition.x,
                         y: absolutePosition.y,
                         zoneId: placement.zone,
-                        localPosition
+                        localPosition,
+                        layoutHints: placement.overrides?.layoutHints
                 };
 
                 resolvedNodes.push(node);
@@ -316,6 +330,18 @@ export const instantiateLayout = (blueprint: LayoutBlueprint): FlowLayout => {
                 for (let index = 1; index < verticalOrder.length; index += 1) {
                         const previous = verticalOrder[index - 1];
                         const current = verticalOrder[index];
+                        const previousLocked = previous.layoutHints?.lockY === true;
+                        const currentLocked = current.layoutHints?.lockY === true;
+
+                        if (currentLocked && previousLocked) {
+                                continue;
+                        }
+
+                        if (currentLocked) {
+                                // Leave locked nodes in place; adjustables will shift on their own iterations.
+                                continue;
+                        }
+
                         if (current.y - previous.y < nodeSpacing) {
                                 current.y = previous.y + nodeSpacing;
                         }
@@ -325,6 +351,17 @@ export const instantiateLayout = (blueprint: LayoutBlueprint): FlowLayout => {
                 for (let index = 1; index < horizontalOrder.length; index += 1) {
                         const previous = horizontalOrder[index - 1];
                         const current = horizontalOrder[index];
+                        const previousLocked = previous.layoutHints?.lockX === true;
+                        const currentLocked = current.layoutHints?.lockX === true;
+
+                        if (currentLocked && previousLocked) {
+                                continue;
+                        }
+
+                        if (currentLocked) {
+                                continue;
+                        }
+
                         if (current.x - previous.x < nodeSpacing) {
                                 current.x = previous.x + nodeSpacing;
                         }

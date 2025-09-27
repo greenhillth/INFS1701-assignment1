@@ -36,6 +36,11 @@ export type RelativePosition = {
 
 export type Positioning = AbsolutePosition | RelativePosition;
 
+export type LayoutHints = {
+        lockX?: boolean;
+        lockY?: boolean;
+};
+
 export type NodeInstance = {
         id: string;
         type: NodeType;
@@ -48,6 +53,7 @@ export type NodeInstance = {
         templateId: string;
         zoneId?: string;
         localPosition?: { x: number; y: number };
+        layoutHints?: LayoutHints;
 };
 
 export type Link = {
