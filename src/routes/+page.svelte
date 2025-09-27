@@ -1,4 +1,5 @@
 <script lang="ts">
+        import { onMount } from 'svelte';
         import { fromStore } from 'svelte/store';
         import { page } from '$app/stores';
         import { iconSet, type IconSet } from '$lib/stores/iconSet';
@@ -10,6 +11,7 @@
         const layout = universityLayout;
         let flowCanvasComponent: FlowCanvas | null = null;
         let diagramFrameElement: HTMLDivElement | null = null;
+        let diagramCanvasWidth = $state<number | null>(null);
         let exporting = $state(false);
         const isEpic = $derived(iconSetState.current === 'crayon');
 
@@ -18,6 +20,15 @@
                 if ((q === 'affinity' || q === 'crayon') && iconSetState.current !== q) {
                         iconSetState.current = q;
                 }
+        });
+
+        onMount(() => {
+                if (typeof window === 'undefined') {
+                        return;
+                }
+
+                const viewportWidth = window.visualViewport?.width ?? window.innerWidth;
+                diagramCanvasWidth = viewportWidth;
         });
 
         function setMode(mode: IconSet) {
@@ -102,7 +113,15 @@
 
         <section class="diagram">
                 <div class="diagram__inner">
-                        <div class="diagram__frame" bind:this={diagramFrameElement}>
+                        <div
+                                class="diagram__frame"
+                                bind:this={diagramFrameElement}
+                                style:--diagram-fixed-width={
+                                        diagramCanvasWidth !== null
+                                                ? `${diagramCanvasWidth}px`
+                                                : undefined
+                                }
+                        >
                                 <div class="diagram__canvas">
                                         <FlowCanvas {layout} bind:this={flowCanvasComponent} />
                                 </div>
@@ -308,6 +327,8 @@
 
         .diagram__frame {
                 position: relative;
+                width: min(100%, var(--diagram-fixed-width, 100%));
+                margin: 0 auto;
                 border-radius: 2rem;
                 border: 1px solid rgb(148 163 184 / 0.2);
                 background: rgb(15 23 42 / 0.55);
@@ -331,7 +352,8 @@
         .diagram__legend {
                 display: flex;
                 gap: 2rem;
-                margin-top: 1.5rem;
+                margin: 1.5rem auto 0;
+                width: min(100%, var(--diagram-fixed-width, 100%));
                 font-size: 0.75rem;
                 color: rgb(226 232 240 / 0.8);
                 flex-wrap: wrap;
