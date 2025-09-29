@@ -52,16 +52,19 @@ The project is pre-configured with `@sveltejs/adapter-static` so it builds into 
 ### 1. Prepare the static build
 
 1. Build the site locally and verify the output:
+
    ```bash
    npm run build
    npm run preview  # optional sanity check
    ```
+
 2. Commit the generated assets only when deploying (GitHub Pages will build them for you if you use Actions).
 
 ### 2. Publish via GitHub Actions
 
 1. Push the repository to GitHub (e.g. `github.com/<username>/infs1701-assignment1`).
 2. Create `.github/workflows/pages.yml` with the following workflow:
+
    ```yaml
    name: Deploy static site
 
@@ -110,6 +113,7 @@ The project is pre-configured with `@sveltejs/adapter-static` so it builds into 
            id: deployment
            uses: actions/deploy-pages@v4
    ```
+
 3. In your repository settings, enable **GitHub Pages** and choose the **GitHub Actions** source.
 4. Trigger the workflow (push to `main` or run it manually). Pages will host the `build/` output at `https://<username>.github.io/<repo>/`.
 
@@ -137,8 +141,9 @@ The project is pre-configured with `@sveltejs/adapter-static` so it builds into 
 
 | Parameter | Effect |
 | --- | --- |
-| `settings.canvasPadding` | Sets extra whitespace around the diagram canvas (top/right/bottom/left in grid units). |
-| `settings.maxWidth` | Constrains the maximum width of the rendered layout before scaling occurs. |
+| `settings.canvas.padding` | Sets extra whitespace around the diagram canvas (top/right/bottom/left in grid units). |
+| `settings.canvas.maxWidth` | Constrains the maximum width of the rendered layout before scaling occurs. |
+| `settings.canvas.render.width` / `padding` / `margin` | Optional defaults for `FlowCanvas` rendering. Accepts `'full-screen'`, fixed dimensions, and container spacing overrides. |
 | `settings.zoneSpacing` | Controls horizontal/vertical spacing between zone containers. |
 | `settings.nodeSpacing` | Default gap between nodes placed by `stackDevices`. |
 | `settings.minNodeSize` / `maxNodeSize` | Clamp automatic scaling of node cards. |

@@ -2,8 +2,10 @@ import { instantiateLayout, placeDevice, stackDevices } from '../layoutBuilder';
 import type { LayoutBlueprint, NodeNetworkProfile } from '../types';
 
 const settings: LayoutBlueprint['settings'] = {
-        canvasPadding: { top: 1, right: 4, bottom: 1, left: 4 },
-        maxWidth: 160,
+        canvas: {
+                padding: { top: 1, right: 4, bottom: 1, left: 4 },
+                maxWidth: 160
+        },
         zoneSpacing: { horizontal: 2, vertical: 2 },
         nodeSpacing: 10,
         minNodeSize: 18,

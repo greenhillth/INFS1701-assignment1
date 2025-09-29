@@ -101,6 +101,22 @@ export type Spacing = {
         left: number;
 };
 
+export type CanvasBoxValue = number | string;
+
+export type CanvasBoxOverrides = CanvasBoxValue | Partial<Record<keyof Spacing, CanvasBoxValue>>;
+
+export type CanvasRenderSettings = {
+        width?: 'full-screen' | CanvasBoxValue;
+        padding?: CanvasBoxOverrides;
+        margin?: CanvasBoxOverrides;
+};
+
+export type CanvasLayoutSettings = {
+        padding?: number | Partial<Spacing>;
+        maxWidth?: number;
+        render?: CanvasRenderSettings;
+};
+
 export type ZoneDefinition = {
         id: string;
         label: string;
@@ -116,8 +132,7 @@ export type AxisSpacing = {
 };
 
 export type LayoutSettings = {
-        canvasPadding?: number | Partial<Spacing>;
-        maxWidth?: number;
+        canvas?: CanvasLayoutSettings;
         zoneSpacing?: number | Partial<AxisSpacing>;
         nodeSpacing?: number;
         minNodeSize?: number;
@@ -147,6 +162,7 @@ export type CanvasMetrics = {
         height: number;
         scale: number;
         padding: Spacing;
+        render?: CanvasRenderSettings;
 };
 
 export type ResolvedLinkStyle = {

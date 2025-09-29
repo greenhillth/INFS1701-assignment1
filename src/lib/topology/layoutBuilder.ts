@@ -126,8 +126,8 @@ const normaliseSpacing = (
         };
 };
 
-const normaliseCanvasPadding = (settings: LayoutSettings | undefined): Spacing =>
-        normaliseSpacing(settings?.canvasPadding, { top: 12, right: 14, bottom: 18, left: 14 });
+const normaliseCanvasPadding = (canvas: LayoutSettings['canvas'] | undefined): Spacing =>
+        normaliseSpacing(canvas?.padding, { top: 12, right: 14, bottom: 18, left: 14 });
 
 const normaliseZoneSpacing = (spacing: LayoutSettings['zoneSpacing']): AxisSpacing => {
         if (typeof spacing === 'number') {
@@ -348,14 +348,16 @@ export const stackDevices = (
 
 export const instantiateLayout = (blueprint: LayoutBlueprint): FlowLayout => {
         const settings: LayoutSettings | undefined = blueprint.settings;
-        const canvasPadding = normaliseCanvasPadding(settings);
+        const canvasConfig = settings?.canvas;
+        const canvasPadding = normaliseCanvasPadding(canvasConfig);
         const zoneSpacing = normaliseZoneSpacing(settings?.zoneSpacing);
-        const maxWidth = settings?.maxWidth ?? 120;
+        const maxWidth = canvasConfig?.maxWidth ?? 120;
         const minNodeSize = settings?.minNodeSize ?? 18;
         const maxNodeSize = settings?.maxNodeSize;
         const minNodeScale = settings?.minNodeScale ?? 0.6;
         const linkStyle = normaliseLinkStyle(settings?.linkStyle);
         const routeStyle = normaliseRouteStyle(settings?.routeStyle);
+        const canvasRenderSettings = canvasConfig?.render ? { ...canvasConfig.render } : undefined;
 
         const resolvedNodes: NodeInstance[] = [];
         const resolvedMap: Record<string, NodeInstance> = {};
@@ -632,7 +634,8 @@ export const instantiateLayout = (blueprint: LayoutBlueprint): FlowLayout => {
                         width: paddedWidth * scale,
                         height: paddedHeight * scale,
                         scale,
-                        padding: scaledPadding
+                        padding: scaledPadding,
+                        render: canvasRenderSettings
                 },
                 linkStyle,
                 routeStyle

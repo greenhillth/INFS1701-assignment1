@@ -1,10 +1,114 @@
 <script lang="ts">
         import NodeCard from '$lib/components/NodeCard.svelte';
         import { onDestroy } from 'svelte';
-        import type { FlowLayout } from './types';
+        import type { CanvasRenderSettings, FlowLayout } from './types';
 
-        let { layout } = $props<{ layout: FlowLayout }>();
+        let { layout, canvasSettings } = $props<{
+                layout: FlowLayout;
+                canvasSettings?: CanvasRenderSettings;
+        }>();
         let canvasRef: HTMLDivElement;
+
+        type CSSBox = { top: string; right: string; bottom: string; left: string };
+
+        const zeroPaddingBox: CSSBox = { top: '0px', right: '0px', bottom: '0px', left: '0px' };
+        const defaultMarginBox: CSSBox = { top: '0px', right: 'auto', bottom: '0px', left: 'auto' };
+
+        const toCssScalar = (value: number | string | undefined): string | undefined => {
+                if (value === undefined) {
+                        return undefined;
+                }
+
+                return typeof value === 'number' ? `${value}rem` : value;
+        };
+
+        const mergeBox = (base: CSSBox, override: CanvasRenderSettings['padding']): CSSBox => {
+                if (typeof override === 'number' || typeof override === 'string') {
+                        const formatted = toCssScalar(override) ?? base.top;
+                        return {
+                                top: formatted,
+                                right: formatted,
+                                bottom: formatted,
+                                left: formatted
+                        };
+                }
+
+                if (override && typeof override === 'object') {
+                        const result: CSSBox = { ...base };
+                        const candidate = override as Partial<
+                                Record<'top' | 'right' | 'bottom' | 'left', number | string>
+                        >;
+
+                        if (candidate.top !== undefined) {
+                                const formattedTop = toCssScalar(candidate.top);
+                                if (formattedTop !== undefined) {
+                                        result.top = formattedTop;
+                                }
+                        }
+
+                        if (candidate.right !== undefined) {
+                                const formattedRight = toCssScalar(candidate.right);
+                                if (formattedRight !== undefined) {
+                                        result.right = formattedRight;
+                                }
+                        }
+
+                        if (candidate.bottom !== undefined) {
+                                const formattedBottom = toCssScalar(candidate.bottom);
+                                if (formattedBottom !== undefined) {
+                                        result.bottom = formattedBottom;
+                                }
+                        }
+
+                        if (candidate.left !== undefined) {
+                                const formattedLeft = toCssScalar(candidate.left);
+                                if (formattedLeft !== undefined) {
+                                        result.left = formattedLeft;
+                                }
+                        }
+
+                        return result;
+                }
+
+                return base;
+        };
+
+        const resolveBox = (base: CSSBox, override?: CanvasRenderSettings['padding']): CSSBox =>
+                override === undefined ? base : mergeBox(base, override);
+
+        type ResolvedWidth = { mode: 'auto' | 'fixed' | 'full-screen'; value?: string };
+
+        const interpretWidth = (value: CanvasRenderSettings['width'] | undefined): ResolvedWidth | null => {
+                if (value === undefined) {
+                        return null;
+                }
+
+                if (value === 'full-screen') {
+                        return { mode: 'full-screen' };
+                }
+
+                const formatted = toCssScalar(value);
+                return formatted ? { mode: 'fixed', value: formatted } : null;
+        };
+
+        const resolveWidthPreference = (
+                base: CanvasRenderSettings['width'] | undefined,
+                override: CanvasRenderSettings['width'] | undefined
+        ): ResolvedWidth => interpretWidth(override) ?? interpretWidth(base) ?? { mode: 'auto' };
+
+        const layoutRenderSettings = $derived((layout.canvas.render ?? {}) as CanvasRenderSettings);
+        const baseContainerPadding = $derived(resolveBox(zeroPaddingBox, layoutRenderSettings.padding));
+        const baseContainerMargin = $derived(resolveBox(defaultMarginBox, layoutRenderSettings.margin));
+
+        const resolvedContainerPadding = $derived(
+                resolveBox(baseContainerPadding, canvasSettings?.padding)
+        );
+        const resolvedContainerMargin = $derived(
+                resolveBox(baseContainerMargin, canvasSettings?.margin)
+        );
+        const widthPreference = $derived(
+                resolveWidthPreference(layoutRenderSettings.width, canvasSettings?.width)
+        );
 
         const nodeLookup = Object.fromEntries(
                 layout.nodes.map((node: FlowLayout['nodes'][number]) => [node.id, node] as const)
@@ -234,18 +338,36 @@
 </script>
 
 <div
-        class="canvas"
-        style:aspect-ratio={`${layout.canvas.width} / ${layout.canvas.height}`}
-        style:--canvas-scale={`${layout.canvas.scale}`}
-        style:--route-fade-delay={`${routeFadeOutDelay}s`}
-        style:--route-fade-duration={`${routeFadeOutDuration}s`}
-        bind:this={canvasRef}
+        class="canvas-container"
+        class:canvas-container--fullscreen={widthPreference.mode === 'full-screen'}
+        style:padding-top={resolvedContainerPadding.top}
+        style:padding-right={resolvedContainerPadding.right}
+        style:padding-bottom={resolvedContainerPadding.bottom}
+        style:padding-left={resolvedContainerPadding.left}
+        style:margin-top={resolvedContainerMargin.top}
+        style:margin-right={resolvedContainerMargin.right}
+        style:margin-bottom={resolvedContainerMargin.bottom}
+        style:margin-left={resolvedContainerMargin.left}
+        style:max-width={widthPreference.mode === 'fixed'
+                ? widthPreference.value
+                : widthPreference.mode === 'full-screen'
+                  ? 'none'
+                  : undefined}
+        style:width={widthPreference.mode === 'full-screen' ? '100%' : undefined}
 >
-        <svg
-                class="canvas__links"
-                viewBox={`0 0 ${layout.canvas.width} ${layout.canvas.height}`}
-                preserveAspectRatio="none"
-                style={svgStyleDeclarations}
+        <div
+                class="canvas"
+                style:aspect-ratio={`${layout.canvas.width} / ${layout.canvas.height}`}
+                style:--canvas-scale={`${layout.canvas.scale}`}
+                style:--route-fade-delay={`${routeFadeOutDelay}s`}
+                style:--route-fade-duration={`${routeFadeOutDuration}s`}
+                bind:this={canvasRef}
+        >
+                <svg
+                        class="canvas__links"
+                        viewBox={`0 0 ${layout.canvas.width} ${layout.canvas.height}`}
+                        preserveAspectRatio="none"
+                        style={svgStyleDeclarations}
         >
                 <defs>
                         <linearGradient id={routeGradientId} gradientUnits="userSpaceOnUse">
@@ -414,9 +536,20 @@
                         </div>
                 </div>
         {/if}
+        </div>
 </div>
 
 <style>
+        .canvas-container {
+                width: 100%;
+                margin: 0 auto;
+                box-sizing: border-box;
+        }
+
+        .canvas-container--fullscreen {
+                max-width: none;
+        }
+
         .canvas {
                 position: relative;
                 width: 100%;
