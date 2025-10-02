@@ -2,14 +2,21 @@
 	import { fromStore } from 'svelte/store';
 	import { iconSet, type IconSet } from '$lib/stores/iconSet';
 
-	let { type, size = 56, title } = $props<{
+	let {
+		type,
+		size = 56,
+		title
+	} = $props<{
 		type:
 			| 'internet'
 			| 'router'
 			| 'switch'
 			| 'mls'
 			| 'server'
+			| 'webserver'
+			| 'mailserver'
 			| 'client'
+			| 'workstation'
 			| 'firewall'
 			| 'vpn'
 			| 'wlc'
@@ -28,7 +35,10 @@
 			switch: '/icons/affinity/sq_switch_blue.svg',
 			mls: '/icons/affinity/sq_switch_multilayer_blue.svg',
 			server: '/icons/affinity/sq_server_blue.svg',
+			webserver: '/icons/affinity/sq_nas_blue.svg',
+			mailserver: '/icons/affinity/sq_nas_blue.svg',
 			client: '/icons/affinity/sq_laptop_blue.svg',
+			workstation: '/icons/affinity/sq_client_blue.svg',
 			firewall: '/icons/affinity/sq_firewall_blue.svg',
 			vpn: '/icons/affinity/sq_vrf_blue.svg',
 			wlc: '/icons/affinity/sq_wlc_blue.svg',
@@ -37,18 +47,21 @@
 			db: '/icons/affinity/sq_servercluster_blue.svg'
 		},
 		crayon: {
-			internet: '/icons/crayon/Internet.png',
-			router: '/icons/crayon/Router.png',
-			switch: '/icons/crayon/Switch 1.png',
-			mls: '/icons/crayon/Switch 2.png',
-			server: '/icons/crayon/Server.png',
-			client: '/icons/crayon/User.png',
-			firewall: '/icons/crayon/Firewall.png',
-			vpn: '/icons/crayon/VPN.png',
-			wlc: '/icons/crayon/Wireless Access Point.png',
-			ap: '/icons/crayon/Wireless Access Point.png',
-			storage: '/icons/crayon/Storage.png',
-			db: '/icons/crayon/SQL Server.png'
+			internet: '/icons/crayon/internet.png',
+			router: '/icons/crayon/router.png',
+			switch: '/icons/crayon/switch_2.png',
+			mls: '/icons/crayon/switch.png',
+			server: '/icons/crayon/server.png',
+			webserver: '/icons/crayon/server_web.png',
+			mailserver: '/icons/crayon/server_mail.png',
+			client: '/icons/crayon/user.png',
+			workstation: '/icons/crayon/workstation.png',
+			firewall: '/icons/crayon/firewall.png',
+			vpn: '/icons/crayon/vpn_router.png',
+			wlc: '/icons/crayon/wap.png',
+			ap: '/icons/crayon/wap.png',
+			storage: '/icons/crayon/storage.png',
+			db: '/icons/crayon/server_database.png'
 		}
 	};
 

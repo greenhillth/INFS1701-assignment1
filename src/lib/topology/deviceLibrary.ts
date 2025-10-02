@@ -72,6 +72,12 @@ export const DEVICE_LIBRARY: Record<string, DeviceTemplate> = {
                 type: 'client',
                 label: 'Endpoint Devices',
                 description: 'User-facing systems accessing network services.',
+        },
+        workstation: {
+                templateId: 'workstation',
+                type: 'client',
+                label: 'Workstation',
+                description: 'User-facing systems accessing network services.',
         }
 };
 
