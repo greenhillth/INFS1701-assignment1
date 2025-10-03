@@ -79,6 +79,12 @@ const networkProfiles: Record<string, NodeNetworkProfile> = {
                 macAddress: '00:1A:8C:00:50:0A',
                 notes: 'Wireless LAN controller for SSID, RF and captive portal policies.'
         },
+        'dc-firewall': {
+                ipAddress: '10.2.0.2',
+                subnet: '10.2.0.0/23',
+                macAddress: '00:1A:8C:00:30:07',
+                notes: 'Firewall protecting core high-trust services.'
+        },
         'dc-distribution': {
                 ipAddress: '10.2.0.1',
                 subnet: '10.2.0.0/23',
@@ -86,7 +92,7 @@ const networkProfiles: Record<string, NodeNetworkProfile> = {
                 notes: 'Resilient aggregation of the university data centre fabric.'
         },
         'dmz-switch': {
-                ipAddress: '10.2.1.2',
+                ipAddress: '10.2.1.3',
                 subnet: '10.2.0.0/23',
                 macAddress: '00:1A:8C:00:30:02',
                 notes: 'Segregates externally reachable services inside the DMZ enclave.'
@@ -301,6 +307,16 @@ const blueprint: LayoutBlueprint = {
                                         }
                                 },
                                 {
+                                        template: 'perimeterFirewall',
+                                        id: 'dc-firewall',
+                                        overrides: {
+                                                label: 'Data Centre Firewall',
+                                                description:
+                                                        'Protects ingress and egress between trusted and untrusted networks.',
+                                                network: networkProfiles['dc-firewall']
+                                        }
+                                },
+                                {
                                         template: 'accessSwitch',
                                         id: 'dmz-switch',
                                         overrides: {
@@ -490,7 +506,8 @@ const blueprint: LayoutBlueprint = {
                 { source: 'core-switch', target: 'residence-distribution', routing: 'straight' },
                 { source: 'core-switch', target: 'wlc' },
 
-                { source: 'dc-distribution', target: 'dmz-switch', routing: 'orthogonal', orientation: 'vertical-first' },
+                { source: 'dc-distribution', target: 'dc-firewall', routing: 'orthogonal', orientation: 'vertical-first' },
+                { source: 'dc-firewall', target: 'dmz-switch' },
                 { source: 'dmz-switch', target: 'web-servers' },
                 { source: 'dmz-switch', target: 'app-servers' },
                 { source: 'dmz-switch', target: 'student-db' },
@@ -499,14 +516,14 @@ const blueprint: LayoutBlueprint = {
                 { source: 'admin-distribution', target: 'admin-access', routing: 'orthogonal', orientation: 'vertical-first' },
                 { source: 'admin-access', target: 'admin-clients' },
                 { source: 'admin-access', target: 'admin-printers' },
-                { source: 'wlc', target: 'admin-ap', dashed: true },
+                { source: 'wlc', target: 'admin-ap', dashed: false },
                 { source: 'admin-ap', target: 'admin-clients', dashed: true },
                 { source: 'admin-ap', target: 'admin-printers', dashed: true },
 
                 { source: 'labs-distribution', target: 'labs-access', routing: 'orthogonal', orientation: 'vertical-first' },
                 { source: 'labs-access', target: 'labs-workstations' },
                 { source: 'labs-access', target: 'labs-iot' },
-                { source: 'wlc', target: 'labs-ap', dashed: true },
+                { source: 'wlc', target: 'labs-ap', dashed: false },
                 { source: 'labs-ap', target: 'labs-workstations', dashed: true },
                 { source: 'labs-ap', target: 'labs-iot', dashed: true },
 

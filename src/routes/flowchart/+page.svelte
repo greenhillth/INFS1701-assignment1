@@ -56,14 +56,60 @@
                         return;
                 }
 
+                let exportTarget: HTMLElement = exportElement;
+                let cleanup: (() => void) | null = null;
+                let targetWidth: number | undefined;
+                let targetHeight: number | undefined;
+
+                if (exportElement === diagramFrameElement && exportElement.isConnected) {
+                        const rect = exportElement.getBoundingClientRect();
+                        const clone = exportElement.cloneNode(true) as HTMLElement;
+                        clone.style.margin = '0';
+                        clone.style.maxWidth = 'none';
+                        clone.style.width = `${rect.width}px`;
+                        clone.style.height = `${rect.height}px`;
+                        clone.style.boxSizing = 'border-box';
+
+                        const wrapper = document.createElement('div');
+                        wrapper.style.position = 'fixed';
+                        wrapper.style.inset = '0';
+                        wrapper.style.pointerEvents = 'none';
+                        wrapper.style.opacity = '0';
+                        wrapper.style.zIndex = '-1';
+                        wrapper.appendChild(clone);
+                        document.body.appendChild(wrapper);
+
+                        exportTarget = clone;
+                        targetWidth = rect.width;
+                        targetHeight = rect.height;
+                        cleanup = () => {
+                                document.body.removeChild(wrapper);
+                        };
+                }
+
+                const exportOptions: {
+                        cacheBust: boolean;
+                        pixelRatio: number;
+                        width?: number;
+                        height?: number;
+                } = {
+                        cacheBust: true,
+                        pixelRatio: window.devicePixelRatio ?? 1
+                };
+
+                if (targetWidth) {
+                        exportOptions.width = targetWidth;
+                }
+
+                if (targetHeight) {
+                        exportOptions.height = targetHeight;
+                }
+
                 exporting = true;
 
                 try {
                         const { toPng } = await import('html-to-image');
-                        const dataUrl = await toPng(exportElement, {
-                                cacheBust: true,
-                                pixelRatio: window.devicePixelRatio ?? 1
-                        });
+                        const dataUrl = await toPng(exportTarget, exportOptions);
 
                         const link = document.createElement('a');
                         const modeLabel = iconSetState.current === 'crayon' ? 'epic' : 'standard';
@@ -73,6 +119,7 @@
                 } catch (error) {
                         console.error('Failed to export canvas', error);
                 } finally {
+                        cleanup?.();
                         exporting = false;
                 }
         }
@@ -152,10 +199,6 @@
         <section class="diagram">
                 <div class="diagram__inner">
                         <div class="diagram__frame" bind:this={diagramFrameElement}>
-                                <div class="diagram__canvas">
-                                        <FlowCanvas {layout} bind:this={flowCanvasComponent} />
-                                </div>
-
                                 <div class="diagram__legend">
                                         <div class="diagram__legend-item">
                                                 <span class="diagram__legend-line" aria-hidden="true"></span>
@@ -166,6 +209,10 @@
                                                 <span>Wireless association</span>
                                         </div>
                                 </div>
+                                <div class="diagram__canvas">
+                                        <FlowCanvas {layout} bind:this={flowCanvasComponent} />
+                                </div>
+
                         </div>
                 </div>
         </section>
@@ -397,6 +444,8 @@
                 border: 1px solid rgb(148 163 184 / 0.2);
                 background: rgb(15 23 42 / 0.55);
                 box-shadow: 0 30px 60px rgb(2 6 23 / 0.65);
+                max-width: 96rem;
+                margin: 0 auto;
                 padding: 1.5rem;
         }
 
@@ -416,7 +465,8 @@
         .diagram__legend {
                 display: flex;
                 gap: 2rem;
-                margin-top: 1.5rem;
+                margin-top: 0rem;
+                margin-bottom: 1.5rem;
                 font-size: 0.75rem;
                 color: rgb(226 232 240 / 0.8);
                 flex-wrap: wrap;
