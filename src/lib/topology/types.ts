@@ -4,13 +4,18 @@ export type NodeType =
         | 'switch'
         | 'mls'
         | 'server'
+        | 'webserver'
+        | 'mailserver'
         | 'client'
+        | 'workstation'
         | 'firewall'
         | 'vpn'
         | 'wlc'
         | 'ap'
         | 'storage'
-        | 'db';
+        | 'db'
+        | 'printer'
+        | 'telephone';
 
 export type NodeNetworkProfile = {
         ipAddress?: string;

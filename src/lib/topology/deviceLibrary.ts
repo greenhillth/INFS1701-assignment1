@@ -75,9 +75,21 @@ export const DEVICE_LIBRARY: Record<string, DeviceTemplate> = {
         },
         workstation: {
                 templateId: 'workstation',
-                type: 'client',
+                type: 'workstation',
                 label: 'Workstation',
                 description: 'User-facing systems accessing network services.',
+        },
+        printer: {
+                templateId: 'printer',
+                type: 'printer',
+                label: 'Network Printer',
+                description: 'Shared printing services for users.',
+        },
+        telephone: {
+                templateId: 'telephone',
+                type: 'telephone',
+                label: 'Telephone',
+                description: 'Voice over IP (VoIP) devices.'
         }
 };
 

@@ -22,7 +22,8 @@
 			| 'wlc'
 			| 'ap'
 			| 'storage'
-			| 'db';
+			| 'db'
+			| 'printer';
 		size?: number;
 		title?: string;
 	}>();
@@ -44,7 +45,9 @@
 			wlc: '/icons/affinity/sq_wlc_blue.svg',
 			ap: '/icons/affinity/sq_wifi_blue.svg',
 			storage: '/icons/affinity/sq_storage_blue.svg',
-			db: '/icons/affinity/sq_servercluster_blue.svg'
+			db: '/icons/affinity/sq_servercluster_blue.svg',
+			printer: '/icons/affinity/sq_printer_blue.svg',
+			telephone: '/icons/affinity/sq_phone_old_blue.svg'
 		},
 		crayon: {
 			internet: '/icons/crayon/internet.png',
@@ -61,7 +64,9 @@
 			wlc: '/icons/crayon/wap.png',
 			ap: '/icons/crayon/wap.png',
 			storage: '/icons/crayon/storage.png',
-			db: '/icons/crayon/server_database.png'
+			db: '/icons/crayon/server_database.png',
+			printer: '/icons/crayon/printer2.png',
+			telephone: '/icons/crayon/phone.png'
 		}
 	};
 
