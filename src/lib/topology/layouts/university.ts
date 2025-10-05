@@ -530,4 +530,4 @@ const blueprint: LayoutBlueprint = {
         ]
 };
 
-export const universityLayout = instantiateLayout(blueprint);
+export const layout = instantiateLayout(blueprint);

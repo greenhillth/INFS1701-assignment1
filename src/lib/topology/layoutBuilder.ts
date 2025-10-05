@@ -265,6 +265,7 @@ const computeZoneBounds = (
                 const anchor = anchors[zone.id];
                 const zoneNodes = nodes.filter((node) => node.zoneId === zone.id);
                 const { padding, minWidth, minHeight } = anchor;
+                const multipleInstances = zone.multipleInstances === true;
 
                 if (zoneNodes.length === 0) {
                         return {
@@ -273,7 +274,8 @@ const computeZoneBounds = (
                                 left: anchor.x - padding.left,
                                 top: anchor.y - padding.top,
                                 width: Math.max(minWidth, padding.left + padding.right),
-                                height: Math.max(minHeight, padding.top + padding.bottom)
+                                height: Math.max(minHeight, padding.top + padding.bottom),
+                                multipleInstances
                         };
                 }
 
@@ -294,7 +296,8 @@ const computeZoneBounds = (
                         left: anchor.x + minX - padding.left,
                         top: anchor.y + minY - padding.top,
                         width,
-                        height
+                        height,
+                        multipleInstances
                 };
         });
 };
@@ -423,6 +426,7 @@ export const instantiateLayout = (blueprint: LayoutBlueprint): FlowLayout => {
                                 : overrideHints;
 
                 const network = mergeNetworkProfiles(template.network, placement.overrides?.network);
+                const multipleInstances = placement.overrides?.multipleInstances === true;
 
                 const node: NodeInstance = {
                         id: nodeId,
@@ -436,7 +440,8 @@ export const instantiateLayout = (blueprint: LayoutBlueprint): FlowLayout => {
                         zoneId: placement.zone,
                         localPosition,
                         layoutHints,
-                        network
+                        network,
+                        multipleInstances
                 };
 
                 resolvedNodes.push(node);

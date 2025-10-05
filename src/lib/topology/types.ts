@@ -15,7 +15,9 @@ export type NodeType =
         | 'storage'
         | 'db'
         | 'printer'
-        | 'telephone';
+        | 'telephone'
+        | 'cctv'
+        | 'poe';
 
 export type NodeNetworkProfile = {
         ipAddress?: string;
@@ -80,6 +82,7 @@ export type NodeInstance = {
         localPosition?: { x: number; y: number };
         layoutHints?: LayoutHints;
         network?: NodeNetworkProfile;
+        multipleInstances?: boolean;
 };
 
 export type Link = {
@@ -97,6 +100,7 @@ export type ComputedZone = {
         top: number;
         width: number;
         height: number;
+        multipleInstances?: boolean;
 };
 
 export type Spacing = {
@@ -129,6 +133,7 @@ export type ZoneDefinition = {
         padding?: number | Partial<Spacing>;
         minWidth?: number;
         minHeight?: number;
+        multipleInstances?: boolean;
 };
 
 export type AxisSpacing = {

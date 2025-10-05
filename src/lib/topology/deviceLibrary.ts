@@ -90,6 +90,18 @@ export const DEVICE_LIBRARY: Record<string, DeviceTemplate> = {
                 type: 'telephone',
                 label: 'Telephone',
                 description: 'Voice over IP (VoIP) devices.'
+        },
+        cctv: {
+                templateId: 'cctv',
+                type: 'cctv',
+                label: 'CCTV Camera',
+                description: 'Surveillance camera for monitoring areas.'
+        },
+        poeSwitch: {
+                templateId: 'poeSwitch',
+                type: 'poe',
+                label: 'PoE Switch',
+                description: 'Power over Ethernet switch for edge devices.'
         }
 };
 

@@ -186,6 +186,18 @@ const networkProfiles: Record<string, NodeNetworkProfile> = {
                 subnet: '10.4.0.0/22',
                 macAddress: '00:1A:8C:00:71:02',
                 notes: 'Voice over IP (VoIP) devices.'
+        },
+        'admin-console': {
+                ipAddress: '10.2.1.251',
+                subnet: '10.2.0.0/22',
+                macAddress: '00:1A:8C:00:71:03',
+                notes: 'Administrative console for managing network devices.'
+        },
+        'cctv-system': {
+                ipAddress: '10.2.1.100',
+                subnet: '10.2.0.0/22',
+                macAddress: '00:1A:8C:00:71:04',
+                notes: 'CCTV system for monitoring school premises.'
         }
 };
 
@@ -203,7 +215,7 @@ const blueprint: LayoutBlueprint = {
                 {
                         id: 'core',
                         label: 'Core Network & Security',
-                        origin: { x: 50, y: 0 },
+                        origin: { x: 45, y: 0 },
                         padding: { top: 8, right: 10, bottom: 8, left: 8 },
                         minWidth: 22,
                         minHeight: 20
@@ -230,7 +242,8 @@ const blueprint: LayoutBlueprint = {
                         origin: { x: 50, y: 40 },
                         padding: { top: 8, right: 10, bottom: 8, left: 10 },
                         minWidth: 30,
-                        minHeight: 36
+                        minHeight: 36,
+                        multipleInstances: true
                 }
         ],
         nodes: [
@@ -297,21 +310,11 @@ const blueprint: LayoutBlueprint = {
                                 description: 'Controls SSIDs, RF policies and roaming services for APs.',
                                 network: networkProfiles.wlc
                         },
-                        position: { reference: 'core-router', offsetX: 20, offsetY: 0 }
+                        position: { reference: 'core-switch', offsetX: 15, offsetY: 0 }
                 }),
                 ...stackDevices(
                         'vertical',
                         [
-                                {
-                                        template: 'distributionSwitch',
-                                        id: 'dc-distribution',
-                                        overrides: {
-                                                label: 'Data Centre Distribution',
-                                                description:
-                                                        'High-availability distribution layer for the data centre footprint.',
-                                                network: networkProfiles['dc-distribution']
-                                        }
-                                },
                                 {
                                         template: 'perimeterFirewall',
                                         id: 'dc-firewall',
@@ -323,17 +326,28 @@ const blueprint: LayoutBlueprint = {
                                         }
                                 },
                                 {
-                                        template: 'accessSwitch',
-                                        id: 'dmz-switch',
+                                        template: 'distributionSwitch',
+                                        id: 'dc-distribution',
                                         overrides: {
-                                                label: 'DMZ Switch',
-                                                description: 'Hardened switch segmenting public-facing DMZ services.',
-                                                network: networkProfiles['dmz-switch']
+                                                label: 'Data Centre Main Switch',
+                                                description:
+                                                        'High-availability distribution layer for the data centre footprint.',
+                                                network: networkProfiles['dc-distribution']
                                         }
                                 }
                         ],
                         { zone: 'dc', start: { x: 0, y: 0 }, gap: nodeGap }
                 ),
+                placeDevice('accessSwitch', {
+                        id: 'dmz-switch',
+                        zone: 'dc',
+                        overrides: {
+                                label: 'Server DMZ Switch',
+                                description: 'Hardened switch segmenting public-facing DMZ services.',
+                                network: networkProfiles['dmz-switch']
+                        },
+                        position: { reference: 'dc-distribution', offsetX: 0, offsetY: 10 }
+                }),
                 ...stackDevices(
                         'horizontal',
                         [
@@ -356,7 +370,7 @@ const blueprint: LayoutBlueprint = {
                                         }
                                 }
                         ],
-                        { zone: 'dc', start: { x: -12, y: 24 }, gap: rowGap }
+                        { zone: 'dc', start: { x: -12, y: 27 }, gap: rowGap }
                 ),
                 ...stackDevices(
                         'horizontal',
@@ -382,6 +396,38 @@ const blueprint: LayoutBlueprint = {
                         ],
                         { zone: 'dc', start: { x: -12, y: 36 }, gap: rowGap }
                 ),
+                placeDevice('workstation', {
+                        id: 'admin-console',
+                        zone: 'dc',
+                        overrides: {
+                                label: 'Admin Console',
+                                description: 'Administrative console for managing network devices.',
+                                network: networkProfiles['admin-console']
+                        },
+                        position: { reference: 'dc-distribution', offsetX: 20, offsetY: 8 }
+                }),
+                placeDevice('cctv', {
+                        id: 'cctv-system',
+                        zone: 'dc',
+                        overrides: {
+                                label: 'CCTV System',
+                                description: 'CCTV system for monitoring school premises.',
+                                network: networkProfiles['cctv-system'],
+                                multipleInstances: true
+                        },
+                        position: { reference: 'admin-console', offsetX: 15, offsetY: 0 }
+                }),
+                placeDevice('poeSwitch', {
+                        id: 'poe-switch',
+                        zone: 'dc',
+                        overrides: {
+                                label: 'PoE Switch',
+                                description: 'Power over Ethernet switch for edge devices.',
+                                network: undefined
+                        },
+                        position: { reference: 'dc-distribution', offsetX: 35, offsetY: 0 }
+                }),
+
                 ...stackDevices(
                         'vertical',
                         [
@@ -503,7 +549,8 @@ const blueprint: LayoutBlueprint = {
                                         overrides: {
                                                 label: 'Student Devices',
                                                 description: 'Student devices connected to school network.',
-                                                network: networkProfiles['classroom-users']
+                                                network: networkProfiles['classroom-users'],
+                                                multipleInstances: true
                                         }
                                 }
                         ],
@@ -515,15 +562,19 @@ const blueprint: LayoutBlueprint = {
                 { source: 'edge-modem', target: 'perimeter-fw', routing: 'straight' },
                 { source: 'perimeter-fw', target: 'core-router', routing: 'straight' },
                 { source: 'core-router', target: 'core-switch', routing: 'straight' },
-                { source: 'core-router', target: 'dc-distribution', routing: 'straight' },
+                { source: 'core-router', target: 'dc-firewall', routing: 'straight' },
                 { source: 'core-switch', target: 'admin-distribution', routing: 'straight' },
                 { source: 'core-switch', target: 'library-distribution', routing: 'straight' },
                 { source: 'core-switch', target: 'classroom-distribution', routing: 'straight' },
                 { source: 'core-switch', target: 'residence-distribution', routing: 'straight' },
                 { source: 'core-switch', target: 'wlc' },
 
-                { source: 'dc-distribution', target: 'dc-firewall', routing: 'orthogonal', orientation: 'vertical-first' },
-                { source: 'dc-firewall', target: 'dmz-switch' },
+                { source: 'dc-firewall', target: 'dc-distribution', routing: 'orthogonal', orientation: 'vertical-first' },
+                { source: 'dc-distribution', target: 'dmz-switch' },
+                { source: 'dc-distribution', target: 'admin-console', routing: 'orthogonal', orientation: 'horizontal-first' },
+                { source: 'dc-distribution', target: 'poe-switch', routing: 'orthogonal', orientation: 'horizontal-first' },
+                { source: 'poe-switch', target: 'cctv-system' },
+
                 { source: 'dmz-switch', target: 'web-servers' },
                 { source: 'dmz-switch', target: 'app-servers' },
                 { source: 'dmz-switch', target: 'student-db' },
@@ -545,4 +596,4 @@ const blueprint: LayoutBlueprint = {
         ]
 };
 
-export const universityLayout = instantiateLayout(blueprint);
+export const layout = instantiateLayout(blueprint);

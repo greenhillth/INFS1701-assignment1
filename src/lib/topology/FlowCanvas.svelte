@@ -459,6 +459,7 @@
         {#each layout.zones as zone (zone.id)}
                 <div
                         class="canvas__zone"
+                        class:canvas__zone--multiple={zone.multipleInstances}
                         style:left={`${xPercent(zone.left)}%`}
                         style:top={`${yPercent(zone.top)}%`}
                         style:width={`${xPercent(zone.width)}%`}
@@ -471,6 +472,7 @@
         {#each layout.nodes as node (node.id)}
                 <div
                         class="canvas__node"
+                        class:canvas__node--multiple={node.multipleInstances}
                         class:canvas__node--active={activeRouteNodeIds.has(node.id)}
                         style:left={`${xPercent(node.x)}%`}
                         style:top={`${yPercent(node.y)}%`}
@@ -575,6 +577,15 @@
                 backdrop-filter: blur(2px);
                 z-index: 5;
                 pointer-events: none;
+                transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .canvas__zone--multiple {
+                border-color: rgb(250 204 21 / 0.55);
+                box-shadow:
+                        0 0 0 2px rgb(250 204 21 / 0.25),
+                        0 0 24px rgb(250 204 21 / 0.35),
+                        inset 0 0 60px rgb(250 204 21 / 0.08);
         }
 
         .canvas__zone-label {
@@ -586,6 +597,12 @@
                 letter-spacing: 0.08em;
                 font-weight: 600;
                 color: rgb(226 232 240 / 0.8);
+                transition: color 0.3s ease, text-shadow 0.3s ease;
+        }
+
+        .canvas__zone--multiple .canvas__zone-label {
+                color: rgb(253 224 71 / 0.9);
+                text-shadow: 0 0 12px rgb(253 224 71 / 0.35);
         }
 
         .canvas__node {
@@ -596,8 +613,20 @@
                 cursor: pointer;
         }
 
+        .canvas__node :global(.card) {
+                transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
         .canvas__node:focus {
                 outline: none;
+        }
+
+        .canvas__node--multiple :global(.card) {
+                border-color: rgb(253 224 71 / 0.65);
+                box-shadow:
+                        0 0 0 2px rgb(253 224 71 / 0.45),
+                        0 0 20px rgb(253 224 71 / 0.4),
+                        0 18px 28px rgb(15 23 42 / 0.5);
         }
 
         .canvas__node--active :global(.card) {

@@ -23,7 +23,10 @@
 			| 'ap'
 			| 'storage'
 			| 'db'
-			| 'printer';
+			| 'printer'
+			| 'telephone'
+			| 'cctv'
+			| 'poe';
 		size?: number;
 		title?: string;
 	}>();
@@ -47,7 +50,9 @@
 			storage: '/icons/affinity/sq_storage_blue.svg',
 			db: '/icons/affinity/sq_servercluster_blue.svg',
 			printer: '/icons/affinity/sq_printer_blue.svg',
-			telephone: '/icons/affinity/sq_phone_old_blue.svg'
+			telephone: '/icons/affinity/sq_ip_phone_blue.svg',
+			cctv: '/icons/affinity/sq_camera_dome_blue.svg',
+			poe: '/icons/affinity/sq_rj45_blue.svg'
 		},
 		crayon: {
 			internet: '/icons/crayon/internet.png',
@@ -66,7 +71,9 @@
 			storage: '/icons/crayon/storage.png',
 			db: '/icons/crayon/server_database.png',
 			printer: '/icons/crayon/printer2.png',
-			telephone: '/icons/crayon/phone.png'
+			telephone: '/icons/crayon/telephone.png',
+			cctv: '/icons/crayon/cctv.png',
+			poe: '/icons/crayon/poe_switch.png'
 		}
 	};
 

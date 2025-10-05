@@ -4,11 +4,10 @@
 	import { page } from '$app/stores';
 	import { iconSet, type IconSet } from '$lib/stores/iconSet';
 	import FlowCanvas from '$lib/topology/FlowCanvas.svelte';
-	import { universityLayout } from '$lib/topology/layouts/highschool';
+	import { layout } from '$lib/topology/layouts/highschool';
 
 	const iconSetState = fromStore(iconSet);
 	const pageState = fromStore(page);
-	const layout = universityLayout;
 	let flowCanvasComponent: FlowCanvas | null = null;
 	let diagramFrameElement: HTMLDivElement | null = null;
 	let exporting = $state(false);
@@ -152,7 +151,7 @@
 <div class="page">
 	<div class="page__inner">
 		<header class="page__header">
-			<h1 class="page__title">University Network Topology</h1>
+			<h1 class="page__title">High School Network Topology</h1>
 
 			<div class="control-panel">
 				<div class="mode-switch">
