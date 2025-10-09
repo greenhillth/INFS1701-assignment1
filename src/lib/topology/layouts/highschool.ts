@@ -284,7 +284,7 @@ const blueprint: LayoutBlueprint = {
                                         id: 'isp',
                                         overrides: {
                                                 label: 'ISP',
-                                                description: 'Primary internet service provider for the university.',
+                                                description: 'Primary Internet service provider for the school.',
                                                 network: networkProfiles.isp
                                         }
                                 },
@@ -293,8 +293,7 @@ const blueprint: LayoutBlueprint = {
                                         id: 'edge-modem',
                                         overrides: {
                                                 label: 'Edge Modem',
-                                                description:
-                                                        'Terminates the ISP link and hands off to campus security.',
+                                                description: 'Terminates the ISP link and hands off to the campus firewall.',
                                                 network: networkProfiles['edge-modem']
                                         }
                                 },
@@ -303,44 +302,46 @@ const blueprint: LayoutBlueprint = {
                                         id: 'perimeter-fw',
                                         overrides: {
                                                 label: 'Perimeter Firewall',
-                                                description:
-                                                        'Protects ingress and egress between trusted and untrusted networks.',
+                                                description: 'Protects traffic between the Internet and school networks; performs NAT and policy enforcement.',
                                                 network: networkProfiles['perimeter-fw']
                                         }
                                 }
                         ],
                         { zone: 'edge', start: { x: 0, y: 0 }, gap: nodeGap }
                 ),
+
                 placeDevice('router', {
                         id: 'core-router',
                         zone: 'core',
                         overrides: {
                                 label: 'Core Router',
-                                description: 'Routes traffic between the campus core, distribution layers and data centre.',
+                                description: 'Routes between the campus core, distribution layers and the server/DMZ networks.',
                                 network: networkProfiles['core-router']
                         },
                         position: { offsetX: 0, offsetY: 0 }
                 }),
+
                 placeDevice('multilayerSwitch', {
                         id: 'core-switch',
                         zone: 'core',
                         overrides: {
-                                description:
-                                        'Aggregates distribution switches and provides high-speed inter-VLAN routing.',
+                                description: 'Aggregates distribution switches and provides high-speed inter-VLAN routing (10 Gb uplinks).',
                                 network: networkProfiles['core-switch']
                         },
                         position: { reference: 'core-router', offsetX: 10, offsetY: 8 }
                 }),
+
                 placeDevice('wirelessController', {
                         id: 'wlc',
                         zone: 'core',
                         overrides: {
                                 label: 'WLC',
-                                description: 'Controls SSIDs, RF policies and roaming services for APs.',
+                                description: 'Controls staff/student/guest SSIDs, RF policy and roaming for APs.',
                                 network: networkProfiles.wlc
                         },
                         position: { reference: 'core-switch', offsetX: 15, offsetY: 0 }
                 }),
+
                 ...stackDevices(
                         'vertical',
                         [
@@ -349,8 +350,7 @@ const blueprint: LayoutBlueprint = {
                                         id: 'dc-firewall',
                                         overrides: {
                                                 label: 'Data Centre Firewall',
-                                                description:
-                                                        'Protects ingress and egress between trusted and untrusted networks.',
+                                                description: 'Separates server/DMZ networks from the rest of campus; enforces service segmentation.',
                                                 network: networkProfiles['dc-firewall']
                                         }
                                 },
@@ -359,24 +359,25 @@ const blueprint: LayoutBlueprint = {
                                         id: 'dc-distribution',
                                         overrides: {
                                                 label: 'Data Centre Main Switch',
-                                                description:
-                                                        'High-availability distribution layer for the data centre footprint.',
+                                                description: 'High-availability aggregation for the school server room.',
                                                 network: networkProfiles['dc-distribution']
                                         }
                                 }
                         ],
                         { zone: 'dc', start: { x: 0, y: 0 }, gap: nodeGap }
                 ),
+
                 placeDevice('accessSwitch', {
                         id: 'dmz-switch',
                         zone: 'dc',
                         overrides: {
                                 label: 'Server DMZ Switch',
-                                description: 'Hardened switch segmenting public-facing DMZ services.',
+                                description: 'Hardened switch segmenting public-facing DMZ services (e.g., VPN portal, guest captive portal).',
                                 network: networkProfiles['dmz-switch']
                         },
                         position: { reference: 'dc-distribution', offsetX: 0, offsetY: 10 }
                 }),
+
                 ...stackDevices(
                         'horizontal',
                         [
@@ -385,7 +386,7 @@ const blueprint: LayoutBlueprint = {
                                         id: 'web-servers',
                                         overrides: {
                                                 label: 'Web Frontends',
-                                                description: 'Handles public website and student portals.',
+                                                description: 'Intranet / LMS front end. (Public website is often hosted off-site.)',
                                                 network: networkProfiles['web-servers']
                                         }
                                 },
@@ -394,13 +395,14 @@ const blueprint: LayoutBlueprint = {
                                         id: 'app-servers',
                                         overrides: {
                                                 label: 'Application Servers',
-                                                description: 'Hosts middleware and faculty specific applications.',
+                                                description: 'Hosts school apps (e.g., LMS, print services, portals).',
                                                 network: networkProfiles['app-servers']
                                         }
                                 }
                         ],
                         { zone: 'dc', start: { x: -12, y: 27 }, gap: rowGap }
                 ),
+
                 ...stackDevices(
                         'horizontal',
                         [
@@ -408,8 +410,8 @@ const blueprint: LayoutBlueprint = {
                                         template: 'databaseCluster',
                                         id: 'student-db',
                                         overrides: {
-                                                label: 'Student Records DB',
-                                                description: 'Mission-critical academic records database cluster.',
+                                                label: 'SIS Database',
+                                                description: 'School Information System (SIS) database for student records.',
                                                 network: networkProfiles['student-db']
                                         }
                                 },
@@ -418,45 +420,49 @@ const blueprint: LayoutBlueprint = {
                                         id: 'backup-storage',
                                         overrides: {
                                                 label: 'Backup Storage',
-                                                description: 'Protects critical services with scheduled snapshots.',
+                                                description: 'NAS handling scheduled backups and archives for critical services.',
                                                 network: networkProfiles['backup-storage']
                                         }
                                 }
                         ],
                         { zone: 'dc', start: { x: -12, y: 36 }, gap: rowGap }
                 ),
+
                 placeDevice('workstation', {
                         id: 'admin-console',
                         zone: 'dc',
                         overrides: {
                                 label: 'Admin Console',
-                                description: 'Administrative console for managing network devices.',
+                                description: 'Jumpbox/management console for network and server administration.',
                                 network: networkProfiles['admin-console']
                         },
                         position: { reference: 'dc-distribution', offsetX: 20, offsetY: 8 }
                 }),
+
                 placeDevice('cctv', {
                         id: 'cctv-system',
                         zone: 'dc',
                         overrides: {
                                 label: 'CCTV System',
-                                description: 'CCTV system for monitoring school premises.',
+                                description: 'NVR and camera management for school premises (segmented VLAN).',
                                 network: networkProfiles['cctv-system'],
                                 multipleInstances: true
                         },
                         position: { reference: 'admin-console', offsetX: 15, offsetY: 0 }
                 }),
+
                 placeDevice('poeSwitch', {
                         id: 'poe-switch',
                         zone: 'dc',
                         overrides: {
                                 label: 'PoE Switch',
-                                description: 'Power over Ethernet switch for edge devices.',
+                                description: 'Provides Power over Ethernet for APs, VoIP phones and cameras.',
                                 network: undefined
                         },
                         position: { reference: 'dc-distribution', offsetX: 35, offsetY: 0 }
                 }),
 
+                // Administration
                 placeDevice('distributionSwitch', {
                         id: 'admin-distribution',
                         zone: 'admin',
@@ -467,37 +473,40 @@ const blueprint: LayoutBlueprint = {
                         },
                         position: { x: 0, y: 0 }
                 }),
+
                 placeDevice('accessSwitch', {
                         id: 'admin-access',
                         zone: 'admin-office',
                         overrides: {
                                 label: 'Admin Access Switch',
-                                description:
-                                        'Connects administration offices, meeting rooms and wired printers.',
+                                description: 'Connects admin offices, meeting rooms and wired printers.',
                                 network: networkProfiles['admin-access']
                         },
                         position: { reference: 'admin-distribution', offsetX: 0, offsetY: nodeGap }
                 }),
+
                 placeDevice('accessPoint', {
                         id: 'admin-ap',
                         zone: 'admin-office',
                         overrides: {
                                 label: 'Admin AP',
-                                description: 'Delivers Wi-Fi coverage for staff in administration buildings.',
+                                description: 'Staff Wi-Fi coverage (WPA2/3-Enterprise).',
                                 network: networkProfiles['admin-ap']
                         },
                         position: { reference: 'admin-access', offsetX: 16, offsetY: 0 }
                 }),
+
                 placeDevice('telephone', {
                         id: 'admin-telephone',
                         zone: 'admin-office',
                         overrides: {
                                 label: 'Office Telephones',
-                                description: 'Voice over IP (VoIP)-enabled devices for staff and outside communication.',
+                                description: 'VoIP handsets for staff and external calls.',
                                 network: networkProfiles['admin-telephone']
                         },
                         position: { reference: 'admin-access', offsetX: 0, offsetY: 10 }
                 }),
+
                 ...stackDevices(
                         'horizontal',
                         [
@@ -515,54 +524,59 @@ const blueprint: LayoutBlueprint = {
                                         id: 'admin-printers',
                                         overrides: {
                                                 label: 'Office Printer',
-                                                description: 'Printer and scanner shared by administration staff.',
+                                                description: 'Shared MFD for printing and scanning (secure release).',
                                                 network: networkProfiles['admin-printers']
                                         }
                                 }
                         ],
                         { zone: 'admin-office', start: { x: 0, y: 24 }, gap: rowGap }
                 ),
-                // <!-- Classroom / Teaching Spaces -->
+
+                // Classrooms / Teaching Spaces
                 placeDevice('distributionSwitch', {
                         id: 'classroom-distribution',
                         zone: 'classrooms',
                         overrides: {
                                 label: 'Classroom Distribution',
-                                description: 'Generic switch that aggregates classroom access switches.',
+                                description: 'Aggregates classroom access switches back to the core.',
                                 network: networkProfiles['classroom-distribution']
                         },
                         position: { x: 0, y: 0 }
                 }),
+
                 placeDevice('accessSwitch', {
                         id: 'classroom-access',
                         zone: 'classroom-core',
                         overrides: {
                                 label: 'Classroom Access Switch',
-                                description: 'Physical switch for classroom wired connections.',
+                                description: 'Access switch for classroom wired connections and AV gear.',
                                 network: networkProfiles['classroom-access']
                         },
                         position: { reference: 'classroom-distribution', offsetX: 0, offsetY: nodeGap }
                 }),
+
                 placeDevice('accessPoint', {
                         id: 'classroom-ap',
                         zone: 'classroom-core',
                         overrides: {
-                                label: 'Classroom WAP',
-                                description: 'Wireless coverage for mobile devices.',
+                                label: 'Classroom AP',
+                                description: 'Wi-Fi coverage for student and teacher devices in classrooms.',
                                 network: networkProfiles['classroom-ap']
                         },
                         position: { reference: 'classroom-access', offsetX: 16, offsetY: 0 }
                 }),
+
                 placeDevice('endpointCluster', {
                         id: 'classroom-teacher',
                         zone: 'classroom-core',
                         overrides: {
                                 label: 'Teacher Laptop',
-                                description: 'Teacher devices connected to school network.',
-                                network: networkProfiles['classroom-teacher']
+                                description: 'Teacher device(s) connected to the classroom network and AV.',
+                                network: networkProfiles['classroom-teacher'] // NOTE: this profile is missing in networkProfiles
                         },
                         position: { reference: 'classroom-access', offsetX: 0, offsetY: 15 }
                 }),
+
                 ...stackDevices(
                         'horizontal',
                         [
@@ -580,7 +594,7 @@ const blueprint: LayoutBlueprint = {
                                         id: 'classroom-users',
                                         overrides: {
                                                 label: 'Student Devices',
-                                                description: 'Student devices connected to school network.',
+                                                description: 'Student laptops/tablets on the student VLAN with filtered Internet.',
                                                 network: networkProfiles['classroom-users'],
                                                 multipleInstances: true
                                         }
