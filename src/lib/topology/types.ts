@@ -101,6 +101,8 @@ export type ComputedZone = {
         width: number;
         height: number;
         multipleInstances?: boolean;
+        parentId?: string;
+        depth: number;
 };
 
 export type Spacing = {
@@ -134,6 +136,7 @@ export type ZoneDefinition = {
         minWidth?: number;
         minHeight?: number;
         multipleInstances?: boolean;
+        parentId?: string;
 };
 
 export type AxisSpacing = {

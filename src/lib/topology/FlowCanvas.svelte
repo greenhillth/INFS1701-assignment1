@@ -460,10 +460,12 @@
                 <div
                         class="canvas__zone"
                         class:canvas__zone--multiple={zone.multipleInstances}
+                        class:canvas__zone--nested={Boolean(zone.parentId)}
                         style:left={`${xPercent(zone.left)}%`}
                         style:top={`${yPercent(zone.top)}%`}
                         style:width={`${xPercent(zone.width)}%`}
                         style:height={`${yPercent(zone.height)}%`}
+                        style:z-index={5 + (zone.depth ?? 0)}
                 >
                         <span class="canvas__zone-label">{zone.label}</span>
                 </div>
@@ -580,6 +582,12 @@
                 transition: border-color 0.3s ease, box-shadow 0.3s ease;
         }
 
+        .canvas__zone--nested {
+                border-color: rgb(148 163 184 / 0.32);
+                background: linear-gradient(160deg, rgb(148 163 184 / 0.06), rgb(15 23 42 / 0.45));
+                box-shadow: inset 0 0 36px rgb(15 23 42 / 0.28);
+        }
+
         .canvas__zone--multiple {
                 border-color: rgb(250 204 21 / 0.55);
                 box-shadow:
@@ -598,6 +606,10 @@
                 font-weight: 600;
                 color: rgb(226 232 240 / 0.8);
                 transition: color 0.3s ease, text-shadow 0.3s ease;
+        }
+
+        .canvas__zone--nested .canvas__zone-label {
+                color: rgb(226 232 240 / 0.9);
         }
 
         .canvas__zone--multiple .canvas__zone-label {

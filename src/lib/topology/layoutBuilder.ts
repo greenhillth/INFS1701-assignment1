@@ -259,13 +259,15 @@ const mergeNetworkProfiles = (
 const computeZoneBounds = (
         zones: ZoneDefinition[],
         anchors: ZoneAnchorMap,
-        nodes: NodeInstance[]
+        nodes: NodeInstance[],
+        zoneDepths: Map<string, number>
 ): FlowLayout['zones'] => {
-        return zones.map((zone) => {
+        const computedZones = zones.map((zone) => {
                 const anchor = anchors[zone.id];
                 const zoneNodes = nodes.filter((node) => node.zoneId === zone.id);
                 const { padding, minWidth, minHeight } = anchor;
                 const multipleInstances = zone.multipleInstances === true;
+                const depth = zoneDepths.get(zone.id) ?? 0;
 
                 if (zoneNodes.length === 0) {
                         return {
@@ -275,8 +277,10 @@ const computeZoneBounds = (
                                 top: anchor.y - padding.top,
                                 width: Math.max(minWidth, padding.left + padding.right),
                                 height: Math.max(minHeight, padding.top + padding.bottom),
-                                multipleInstances
-                        };
+                                multipleInstances,
+                                parentId: zone.parentId,
+                                depth
+                        } satisfies FlowLayout['zones'][number];
                 }
 
                 const localXs = zoneNodes.map((node) => node.localPosition?.x ?? node.x - anchor.x);
@@ -297,9 +301,46 @@ const computeZoneBounds = (
                         top: anchor.y + minY - padding.top,
                         width,
                         height,
-                        multipleInstances
-                };
+                        multipleInstances,
+                        parentId: zone.parentId,
+                        depth
+                } satisfies FlowLayout['zones'][number];
         });
+
+        const resultMap = new Map(computedZones.map((zone) => [zone.id, zone] as const));
+        const zonesByDepth = [...zones].sort(
+                (a, b) => (zoneDepths.get(b.id) ?? 0) - (zoneDepths.get(a.id) ?? 0)
+        );
+
+        for (const zone of zonesByDepth) {
+                if (!zone.parentId) {
+                        continue;
+                }
+
+                const child = resultMap.get(zone.id);
+                const parent = resultMap.get(zone.parentId);
+
+                if (!child || !parent) {
+                        continue;
+                }
+
+                const childRight = child.left + child.width;
+                const childBottom = child.top + child.height;
+                const parentRight = parent.left + parent.width;
+                const parentBottom = parent.top + parent.height;
+
+                const updatedLeft = Math.min(parent.left, child.left);
+                const updatedTop = Math.min(parent.top, child.top);
+                const updatedRight = Math.max(parentRight, childRight);
+                const updatedBottom = Math.max(parentBottom, childBottom);
+
+                parent.left = updatedLeft;
+                parent.top = updatedTop;
+                parent.width = updatedRight - updatedLeft;
+                parent.height = updatedBottom - updatedTop;
+        }
+
+        return computedZones;
 };
 
 export type StackDirection = 'horizontal' | 'vertical';
@@ -364,18 +405,59 @@ export const instantiateLayout = (blueprint: LayoutBlueprint): FlowLayout => {
 
         const resolvedNodes: NodeInstance[] = [];
         const resolvedMap: Record<string, NodeInstance> = {};
-        const zoneAnchors: ZoneAnchorMap = Object.fromEntries(
-                blueprint.zones.map((zone) => [
-                        zone.id,
-                        {
-                                x: zone.origin.x,
-                                y: zone.origin.y,
-                                padding: normalisePadding(zone.padding ?? 10),
-                                minWidth: zone.minWidth ?? 0,
-                                minHeight: zone.minHeight ?? 0
+
+        const zoneDefinitionMap = new Map(blueprint.zones.map((zone) => [zone.id, zone] as const));
+        const zoneAnchors: ZoneAnchorMap = {};
+        const zoneDepths = new Map<string, number>();
+        const resolving = new Set<string>();
+
+        const resolveZoneAnchor = (zone: ZoneDefinition): ZoneAnchor => {
+                const cached = zoneAnchors[zone.id];
+                if (cached) {
+                        return cached;
+                }
+
+                if (resolving.has(zone.id)) {
+                        throw new Error(`Circular zone hierarchy detected at "${zone.id}".`);
+                }
+
+                resolving.add(zone.id);
+
+                let anchorX = zone.origin.x;
+                let anchorY = zone.origin.y;
+                let depth = 0;
+
+                if (zone.parentId) {
+                        const parent = zoneDefinitionMap.get(zone.parentId);
+                        if (!parent) {
+                                throw new Error(`Zone "${zone.id}" references missing parent "${zone.parentId}".`);
                         }
-                ])
-        );
+
+                        const parentAnchor = resolveZoneAnchor(parent);
+                        anchorX = parentAnchor.x + zone.origin.x;
+                        anchorY = parentAnchor.y + zone.origin.y;
+                        depth = (zoneDepths.get(parent.id) ?? 0) + 1;
+                }
+
+                const anchor: ZoneAnchor = {
+                        x: anchorX,
+                        y: anchorY,
+                        padding: normalisePadding(zone.padding ?? 10),
+                        minWidth: zone.minWidth ?? 0,
+                        minHeight: zone.minHeight ?? 0
+                };
+
+                zoneAnchors[zone.id] = anchor;
+                zoneDepths.set(zone.id, depth);
+                resolving.delete(zone.id);
+
+                return anchor;
+        };
+
+        for (const zone of blueprint.zones) {
+                resolveZoneAnchor(zone);
+        }
+
         const anchorPositions: AnchorMap = Object.fromEntries(
                 Object.entries(zoneAnchors).map(([id, anchor]) => [id, { x: anchor.x, y: anchor.y }])
         );
@@ -511,12 +593,14 @@ export const instantiateLayout = (blueprint: LayoutBlueprint): FlowLayout => {
                 }
         }
 
-        const computedZones = computeZoneBounds(blueprint.zones, zoneAnchors, resolvedNodes);
+        const computedZones = computeZoneBounds(blueprint.zones, zoneAnchors, resolvedNodes, zoneDepths);
         const zoneOffsets = new Map<string, ZoneOffset>(
                 computedZones.map((zone) => [zone.id, { dx: 0, dy: 0 }])
         );
 
-        const zonesByTop = [...computedZones].sort((a, b) => (a.top === b.top ? a.left - b.left : a.top - b.top));
+        const topLevelZones = computedZones.filter((zone) => zone.parentId === undefined);
+
+        const zonesByTop = [...topLevelZones].sort((a, b) => (a.top === b.top ? a.left - b.left : a.top - b.top));
         for (let index = 0; index < zonesByTop.length; index += 1) {
                 const zone = zonesByTop[index];
                 let verticalShift = 0;
@@ -542,7 +626,7 @@ export const instantiateLayout = (blueprint: LayoutBlueprint): FlowLayout => {
                 }
         }
 
-        const zonesByLeft = [...computedZones].sort((a, b) => (a.left === b.left ? a.top - b.top : a.left - b.left));
+        const zonesByLeft = [...topLevelZones].sort((a, b) => (a.left === b.left ? a.top - b.top : a.left - b.left));
         for (let index = 0; index < zonesByLeft.length; index += 1) {
                 const zone = zonesByLeft[index];
                 let horizontalShift = 0;
