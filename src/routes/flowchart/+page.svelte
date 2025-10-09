@@ -3,8 +3,10 @@
 	import { fromStore } from 'svelte/store';
 	import { page } from '$app/stores';
 	import { iconSet, type IconSet } from '$lib/stores/iconSet';
+	import Icon from '$lib/components/Icon.svelte';
 	import FlowCanvas from '$lib/topology/FlowCanvas.svelte';
 	import { layout } from '$lib/topology/layouts/highschool';
+	import type { NodeType } from '$lib/topology/types';
 
 	const iconSetState = fromStore(iconSet);
 	const pageState = fromStore(page);
@@ -21,6 +23,45 @@
 				? 'Copy failed'
 				: 'Copy share link'
 	);
+
+	const zoneLegendOrder = ['edge', 'core', 'admin', 'classrooms', 'dc'] as const;
+	const zoneLegendEntries = zoneLegendOrder
+		.map((id) => layout.zones.find((zone) => zone.id === id))
+		.filter((zone): zone is (typeof layout.zones)[number] => Boolean(zone));
+
+	type LegendDeviceItem = { type: NodeType; label: string };
+
+	const legendDeviceGroups: Array<{ title: string; items: LegendDeviceItem[] }> = [
+		{
+			title: 'Infrastructure',
+			items: [
+				{ type: 'router', label: 'Router' },
+				{ type: 'switch', label: 'Switch' },
+				{ type: 'firewall', label: 'Firewall' },
+				{ type: 'wlc', label: 'Controller' }
+			]
+		},
+		{
+			title: 'Endpoints',
+			items: [
+				{ type: 'workstation', label: 'PC / Laptop' },
+				{ type: 'printer', label: 'Printer' },
+				{ type: 'telephone', label: 'Phone' },
+				{ type: 'ap', label: 'Access Point' }
+			]
+		},
+		{
+			title: 'Special',
+			items: [
+				{ type: 'server', label: 'Server Stack' },
+				{ type: 'db', label: 'Database' },
+				{ type: 'cctv', label: 'CCTV' }
+			]
+		}
+	];
+
+	const privateRanges = ['10.x.x.x', '172.16.x.x'] as const;
+	const securityBoundaryHint = 'Security boundary enforced by the Perimeter Firewall';
 
 	$effect(() => {
 		const q = pageState.current.url.searchParams.get('icons') as IconSet | null;
@@ -189,15 +230,68 @@
 	<section class="diagram">
 		<div class="diagram__inner">
 			<div class="diagram__frame" bind:this={diagramFrameElement}>
-				<div class="diagram__legend">
-					<div class="diagram__legend-item">
-						<span class="diagram__legend-line" aria-hidden="true"></span>
-						<span>Wired uplink</span>
+				<div class="diagram__legend" aria-label="Network diagram legend">
+					<div class="diagram__legend-section">
+						<p class="diagram__legend-heading">Zone Indicators</p>
+						<div class="diagram__legend-zones">
+							<div class="diagram__legend-zone-list">
+								{#each zoneLegendEntries as zone (zone.id)}
+									<span class="diagram__legend-zone-label">{zone.label}</span>
+								{/each}
+							</div>
+							<div class="diagram__legend-zone-hint">
+								<span class="diagram__legend-zone-swatch" aria-hidden="true"></span>
+								<span>
+									Yellow border marks representative or repeated spaces (e.g. typical classroom or
+									office).
+								</span>
+							</div>
+						</div>
 					</div>
-					<div class="diagram__legend-item">
-						<span class="diagram__legend-line diagram__legend-line--dashed" aria-hidden="true"
-						></span>
-						<span>Wireless association</span>
+
+					<div class="diagram__legend-section">
+						<p class="diagram__legend-heading">Device Types</p>
+						<div class="diagram__legend-groups">
+							{#each legendDeviceGroups as group (group.title)}
+								<div class="diagram__legend-group">
+									<span class="diagram__legend-group-title">{group.title}</span>
+									<div class="diagram__legend-device-grid">
+										{#each group.items as item (item.type)}
+											<div class="diagram__legend-device">
+												<Icon type={item.type} size={32} title={item.label} />
+												<span>{item.label}</span>
+											</div>
+										{/each}
+									</div>
+								</div>
+							{/each}
+						</div>
+					</div>
+
+					<div class="diagram__legend-section">
+						<p class="diagram__legend-heading">Network Context</p>
+						<div class="diagram__legend-network">
+							<div class="diagram__legend-network-item">
+								<span class="diagram__legend-link" aria-hidden="true"></span>
+								<span>Wired uplink</span>
+							</div>
+							<div class="diagram__legend-network-item">
+								<span class="diagram__legend-link diagram__legend-link--dashed" aria-hidden="true"></span>
+								<span>Wireless association</span>
+							</div>
+							<div class="diagram__legend-network-item">
+								<div class="diagram__legend-range-list">
+									{#each privateRanges as range}
+										<span class="diagram__legend-range">{range}</span>
+									{/each}
+								</div>
+								<span>Private IPv4 ranges indicating internal networks.</span>
+							</div>
+							<div class="diagram__legend-network-item">
+								<span class="diagram__legend-lock" aria-hidden="true"></span>
+								<span>{securityBoundaryHint}</span>
+							</div>
+						</div>
 					</div>
 				</div>
 				<div class="diagram__canvas">
@@ -464,31 +558,188 @@
 	}
 
 	.diagram__legend {
-		display: flex;
-		gap: 2rem;
-		margin-top: 0rem;
-		margin-bottom: 1.5rem;
+		display: grid;
+		gap: 1.5rem;
+		margin: 0 0 1.5rem;
 		font-size: 0.75rem;
-		color: rgb(226 232 240 / 0.8);
-		flex-wrap: wrap;
+		color: rgb(226 232 240 / 0.82);
+		grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+		align-items: stretch;
 	}
 
-	.diagram__legend-item {
+	.diagram__legend-section {
+		display: flex;
+		flex-direction: column;
+		gap: 0.9rem;
+		padding: 1rem 1.25rem;
+		border-radius: 1.25rem;
+		border: 1px solid rgb(148 163 184 / 0.24);
+		background: linear-gradient(160deg, rgb(148 163 184 / 0.14), rgb(15 23 42 / 0.55));
+		box-shadow: 0 18px 32px rgb(15 23 42 / 0.35);
+		backdrop-filter: blur(6px);
+	}
+
+	.diagram__legend-heading {
+		margin: 0;
+		font-size: 0.82rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color: rgb(148 163 184 / 0.95);
+	}
+
+	.diagram__legend-zones {
+		display: flex;
+		flex-direction: column;
+		gap: 0.8rem;
+	}
+
+	.diagram__legend-zone-list {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.45rem;
+	}
+
+	.diagram__legend-zone-label {
 		display: inline-flex;
 		align-items: center;
-		gap: 0.6rem;
+		justify-content: center;
+		padding: 0.3rem 0.75rem;
+		border-radius: 9999px;
+		border: 1px solid rgb(148 163 184 / 0.32);
+		background: rgb(15 23 42 / 0.55);
+		color: rgb(241 245 249 / 0.9);
+		font-weight: 500;
 	}
 
-	.diagram__legend-line {
+	.diagram__legend-zone-hint {
+		display: flex;
+		align-items: center;
+		gap: 0.7rem;
+		font-size: 0.72rem;
+		color: rgb(226 232 240 / 0.68);
+		line-height: 1.4;
+	}
+
+	.diagram__legend-zone-swatch {
+		position: relative;
+		display: inline-block;
+		width: 1.75rem;
+		height: 1.1rem;
+		border-radius: 0.6rem;
+		border: 2px solid rgb(253 224 71 / 0.75);
+		background: linear-gradient(160deg, rgb(253 224 71 / 0.16), rgb(15 23 42 / 0.6));
+		box-shadow: 0 0 0 2px rgb(253 224 71 / 0.3), 0 0 18px rgb(253 224 71 / 0.35);
+	}
+
+	.diagram__legend-groups {
+		display: flex;
+		flex-direction: column;
+		gap: 0.85rem;
+	}
+
+	.diagram__legend-group {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	.diagram__legend-group-title {
+		font-size: 0.72rem;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color: rgb(148 163 184 / 0.78);
+	}
+
+	.diagram__legend-device-grid {
+		display: grid;
+		gap: 0.6rem 1rem;
+		grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+	}
+
+	.diagram__legend-device {
+		display: flex;
+		align-items: center;
+		gap: 0.55rem;
+		color: rgb(226 232 240 / 0.9);
+		font-weight: 500;
+	}
+
+	.diagram__legend-device span {
+		font-size: 0.74rem;
+	}
+
+	.diagram__legend-network {
+		display: flex;
+		flex-direction: column;
+		gap: 0.85rem;
+	}
+
+	.diagram__legend-link {
 		display: inline-block;
 		width: 3rem;
 		height: 0.125rem;
 		background: rgb(148 163 184 / 0.7);
+		border-radius: 9999px;
 	}
 
-	.diagram__legend-line--dashed {
+	.diagram__legend-link--dashed {
 		background: none;
 		border-bottom: 1px dashed rgb(125 211 252 / 0.85);
+	}
+
+	.diagram__legend-network-item {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		flex-wrap: wrap;
+		color: rgb(226 232 240 / 0.8);
+		line-height: 1.4;
+	}
+
+	.diagram__legend-range-list {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.45rem;
+		flex-wrap: wrap;
+	}
+
+	.diagram__legend-range {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0.25rem 0.55rem;
+		border-radius: 0.5rem;
+		border: 1px solid rgb(94 234 212 / 0.4);
+		background: rgb(15 118 110 / 0.18);
+		color: rgb(204 251 241 / 0.9);
+		font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+			'Courier New', monospace;
+		font-size: 0.68rem;
+	}
+
+	.diagram__legend-lock {
+		position: relative;
+		display: inline-block;
+		width: 1rem;
+		height: 0.8rem;
+		border: 2px solid rgb(94 234 212 / 0.7);
+		border-radius: 0.2rem;
+		box-sizing: border-box;
+	}
+
+	.diagram__legend-lock::before {
+		content: '';
+		position: absolute;
+		top: -0.55rem;
+		left: 50%;
+		width: 1rem;
+		height: 0.6rem;
+		border: 2px solid rgb(94 234 212 / 0.7);
+		border-bottom: none;
+		border-radius: 0.55rem 0.55rem 0 0;
+		transform: translateX(-50%);
+		box-sizing: border-box;
 	}
 
 	.page__footer {
