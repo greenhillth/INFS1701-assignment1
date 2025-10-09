@@ -62,6 +62,7 @@
 
 	const privateRanges = ['10.x.x.x', '172.16.x.x'] as const;
 	const securityBoundaryHint = 'Security boundary enforced by the Perimeter Firewall';
+	const EXPORT_BACKGROUND = '#01010a';
 
 	$effect(() => {
 		const q = pageState.current.url.searchParams.get('icons') as IconSet | null;
@@ -116,10 +117,31 @@
 			wrapper.style.pointerEvents = 'none';
 			wrapper.style.opacity = '0';
 			wrapper.style.zIndex = '-1';
-			wrapper.appendChild(clone);
+
+			const pageElement = document.querySelector('.page') as HTMLElement | null;
+			const pageStyle = pageElement ? window.getComputedStyle(pageElement) : null;
+			const backgroundContainer = document.createElement('div');
+			backgroundContainer.style.display = 'inline-block';
+			backgroundContainer.style.width = `${rect.width}px`;
+			backgroundContainer.style.height = `${rect.height}px`;
+			backgroundContainer.style.margin = '0';
+			backgroundContainer.style.backgroundColor = EXPORT_BACKGROUND;
+
+			if (pageStyle) {
+				const backgroundImage = pageStyle.backgroundImage;
+				if (backgroundImage && backgroundImage !== 'none') {
+					backgroundContainer.style.backgroundImage = backgroundImage;
+					backgroundContainer.style.backgroundPosition = pageStyle.backgroundPosition;
+					backgroundContainer.style.backgroundSize = pageStyle.backgroundSize;
+					backgroundContainer.style.backgroundRepeat = pageStyle.backgroundRepeat;
+				}
+			}
+
+			backgroundContainer.appendChild(clone);
+			wrapper.appendChild(backgroundContainer);
 			document.body.appendChild(wrapper);
 
-			exportTarget = clone;
+			exportTarget = backgroundContainer;
 			targetWidth = rect.width;
 			targetHeight = rect.height;
 			cleanup = () => {
@@ -134,7 +156,8 @@
 			height?: number;
 		} = {
 			cacheBust: true,
-			pixelRatio: window.devicePixelRatio ?? 1
+			pixelRatio: window.devicePixelRatio ?? 1,
+			backgroundColor: EXPORT_BACKGROUND
 		};
 
 		if (targetWidth) {
@@ -146,6 +169,13 @@
 		}
 
 		exporting = true;
+
+		let previousBackgroundColor: string | null = null;
+
+		if (exportTarget instanceof HTMLElement && exportTarget.style) {
+			previousBackgroundColor = exportTarget.style.backgroundColor ?? null;
+			exportTarget.style.backgroundColor = EXPORT_BACKGROUND;
+		}
 
 		try {
 			const { toPng } = await import('html-to-image');
@@ -159,6 +189,13 @@
 		} catch (error) {
 			console.error('Failed to export canvas', error);
 		} finally {
+			if (exportTarget instanceof HTMLElement && exportTarget.style) {
+				if (previousBackgroundColor) {
+					exportTarget.style.backgroundColor = previousBackgroundColor;
+				} else {
+					exportTarget.style.removeProperty('background-color');
+				}
+			}
 			cleanup?.();
 			exporting = false;
 		}
@@ -230,7 +267,16 @@
 	<section class="diagram">
 		<div class="diagram__inner">
 			<div class="diagram__frame" bind:this={diagramFrameElement}>
-				<div class="diagram__legend" aria-label="Network diagram legend">
+				<div class="diagram__canvas" aria-labelledby="diagram-canvas-title">
+					<h2 id="diagram-canvas-title" class="diagram__section-title diagram__section-title--canvas">
+						Network Flowchart
+					</h2>
+					<FlowCanvas {layout} bind:this={flowCanvasComponent} />
+				</div>
+				<div class="diagram__legend" aria-labelledby="diagram-legend-title">
+					<h2 id="diagram-legend-title" class="diagram__section-title diagram__section-title--legend">
+						Diagram Legend
+					</h2>
 					<div class="diagram__legend-section">
 						<p class="diagram__legend-heading">Zone Indicators</p>
 						<div class="diagram__legend-zones">
@@ -294,16 +340,20 @@
 						</div>
 					</div>
 				</div>
-				<div class="diagram__canvas">
-					<FlowCanvas {layout} bind:this={flowCanvasComponent} />
-				</div>
 			</div>
 		</div>
 	</section>
 
 	<div class="page__inner">
 		<footer class="page__footer">
-			Toggle icons above — files are served from <code>/static/icons/…</code>
+			Created by
+			<a href="https://github.com/greenhillth" target="_blank" rel="noopener noreferrer"> Tom Greenhill </a>
+			(z5309693) for <b>INFS1701 Assignment 1</b>. Icons by
+			<a href="https://www.affinity.serif.com/en-gb/iconset/" target="_blank" rel="noopener noreferrer"> Affinity </a>
+			and
+			<a href="https://crayons.world/" target="_blank" rel="noopener noreferrer"> Crayons </a>.
+			Source code available on
+			<a href="https://github.com/greenhillth/INFS1701-assignment1" target="_blank" rel="noopener noreferrer"> GitHub </a>.
 		</footer>
 	</div>
 </div>
@@ -544,6 +594,24 @@
 		padding: 1.5rem;
 	}
 
+	.diagram__section-title {
+		margin: 0;
+		font-size: 1rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color: rgb(148 163 184 / 0.95);
+	}
+
+	.diagram__section-title--legend {
+		grid-column: 1 / -1;
+	}
+
+	.diagram__section-title--canvas {
+		margin-bottom: 1rem;
+		color: rgb(226 232 240 / 0.92);
+	}
+
 	.diagram__canvas {
 		position: relative;
 		width: 100%;
@@ -560,7 +628,7 @@
 	.diagram__legend {
 		display: grid;
 		gap: 1.5rem;
-		margin: 0 0 1.5rem;
+		margin: 1.5rem 0 0;
 		font-size: 0.75rem;
 		color: rgb(226 232 240 / 0.82);
 		grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
