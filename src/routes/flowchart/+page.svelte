@@ -229,7 +229,19 @@
 <div class="page">
 	<div class="page__inner">
 		<header class="page__header">
-			<h1 class="page__title">High School Network Topology</h1>
+			<div class="page__hero">
+				<div class="page__brand">
+					<img class="page__logo" src="/logo/logo-512.png" alt="SecureStart company logo" />
+					<span class="page__brand-name">SecureStart</span>
+				</div>
+				<div class="page__hero-copy">
+					<h1 class="page__title">High School Network Topology</h1>
+					<p class="page__blurb">
+						Explore the SecureStart network flowchart to trace campus connectivity, security zones, and
+						key infrastructure at a glance.
+					</p>
+				</div>
+			</div>
 
 			<div class="control-panel">
 				<div class="mode-switch">
@@ -262,6 +274,74 @@
 				</button>
 			</div>
 		</header>
+		<section class="page__legend" aria-labelledby="diagram-legend-title">
+			<div class="diagram__legend">
+				<h2 id="diagram-legend-title" class="diagram__section-title diagram__section-title--legend">
+					Diagram Legend
+				</h2>
+				<div class="diagram__legend-section">
+					<p class="diagram__legend-heading">Zone Indicators</p>
+					<div class="diagram__legend-zones">
+						<div class="diagram__legend-zone-list">
+							{#each zoneLegendEntries as zone (zone.id)}
+								<span class="diagram__legend-zone-label">{zone.label}</span>
+							{/each}
+						</div>
+						<div class="diagram__legend-zone-hint">
+							<span class="diagram__legend-zone-swatch" aria-hidden="true"></span>
+							<span>
+								Yellow border marks representative or repeated spaces (e.g. typical classroom or office).
+							</span>
+						</div>
+					</div>
+				</div>
+
+				<div class="diagram__legend-section">
+					<p class="diagram__legend-heading">Device Types</p>
+					<div class="diagram__legend-groups">
+						{#each legendDeviceGroups as group (group.title)}
+							<div class="diagram__legend-group">
+								<span class="diagram__legend-group-title">{group.title}</span>
+								<div class="diagram__legend-device-grid">
+									{#each group.items as item (item.type)}
+										<div class="diagram__legend-device">
+											<Icon type={item.type} size={32} title={item.label} />
+											<span>{item.label}</span>
+										</div>
+									{/each}
+								</div>
+							</div>
+						{/each}
+					</div>
+				</div>
+
+				<div class="diagram__legend-section">
+					<p class="diagram__legend-heading">Network Context</p>
+					<div class="diagram__legend-network">
+						<div class="diagram__legend-network-item">
+							<span class="diagram__legend-link" aria-hidden="true"></span>
+							<span>Wired uplink</span>
+						</div>
+						<div class="diagram__legend-network-item">
+							<span class="diagram__legend-link diagram__legend-link--dashed" aria-hidden="true"></span>
+							<span>Wireless association</span>
+						</div>
+						<div class="diagram__legend-network-item">
+							<div class="diagram__legend-range-list">
+								{#each privateRanges as range}
+									<span class="diagram__legend-range">{range}</span>
+								{/each}
+							</div>
+							<span>Private IPv4 ranges indicating internal networks.</span>
+						</div>
+						<div class="diagram__legend-network-item">
+							<span class="diagram__legend-lock" aria-hidden="true"></span>
+							<span>{securityBoundaryHint}</span>
+						</div>
+					</div>
+				</div>
+			</div>
+		</section>
 	</div>
 
 	<section class="diagram">
@@ -272,73 +352,6 @@
 						Network Flowchart
 					</h2>
 					<FlowCanvas {layout} bind:this={flowCanvasComponent} />
-				</div>
-				<div class="diagram__legend" aria-labelledby="diagram-legend-title">
-					<h2 id="diagram-legend-title" class="diagram__section-title diagram__section-title--legend">
-						Diagram Legend
-					</h2>
-					<div class="diagram__legend-section">
-						<p class="diagram__legend-heading">Zone Indicators</p>
-						<div class="diagram__legend-zones">
-							<div class="diagram__legend-zone-list">
-								{#each zoneLegendEntries as zone (zone.id)}
-									<span class="diagram__legend-zone-label">{zone.label}</span>
-								{/each}
-							</div>
-							<div class="diagram__legend-zone-hint">
-								<span class="diagram__legend-zone-swatch" aria-hidden="true"></span>
-								<span>
-									Yellow border marks representative or repeated spaces (e.g. typical classroom or
-									office).
-								</span>
-							</div>
-						</div>
-					</div>
-
-					<div class="diagram__legend-section">
-						<p class="diagram__legend-heading">Device Types</p>
-						<div class="diagram__legend-groups">
-							{#each legendDeviceGroups as group (group.title)}
-								<div class="diagram__legend-group">
-									<span class="diagram__legend-group-title">{group.title}</span>
-									<div class="diagram__legend-device-grid">
-										{#each group.items as item (item.type)}
-											<div class="diagram__legend-device">
-												<Icon type={item.type} size={32} title={item.label} />
-												<span>{item.label}</span>
-											</div>
-										{/each}
-									</div>
-								</div>
-							{/each}
-						</div>
-					</div>
-
-					<div class="diagram__legend-section">
-						<p class="diagram__legend-heading">Network Context</p>
-						<div class="diagram__legend-network">
-							<div class="diagram__legend-network-item">
-								<span class="diagram__legend-link" aria-hidden="true"></span>
-								<span>Wired uplink</span>
-							</div>
-							<div class="diagram__legend-network-item">
-								<span class="diagram__legend-link diagram__legend-link--dashed" aria-hidden="true"></span>
-								<span>Wireless association</span>
-							</div>
-							<div class="diagram__legend-network-item">
-								<div class="diagram__legend-range-list">
-									{#each privateRanges as range}
-										<span class="diagram__legend-range">{range}</span>
-									{/each}
-								</div>
-								<span>Private IPv4 ranges indicating internal networks.</span>
-							</div>
-							<div class="diagram__legend-network-item">
-								<span class="diagram__legend-lock" aria-hidden="true"></span>
-								<span>{securityBoundaryHint}</span>
-							</div>
-						</div>
-					</div>
 				</div>
 			</div>
 		</div>
@@ -377,26 +390,103 @@
 	}
 
 	.page__header {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr);
+		align-items: center;
+		gap: 1.5rem;
+		margin-bottom: 2rem;
+		padding: 1.75rem 2rem;
+		border-radius: 1.25rem;
+		border: 1px solid rgb(148 163 184 / 0.45);
+		background: linear-gradient(90deg, #7eb6de 0%, #68a2cf 100%);
+		box-shadow: 0 26px 52px rgb(15 23 42 / 0.4);
+		color: #0b1f33;
+	}
+
+	.page__hero {
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
-		justify-content: space-between;
-		gap: 1.5rem;
-		margin-bottom: 2rem;
+		gap: 1.25rem;
+	}
+
+	.page__brand {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.85rem;
+		padding: 0.35rem 0.85rem;
+		border-radius: 9999px;
+		border: 1px solid rgb(255 255 255 / 0.45);
+		background: rgb(255 255 255 / 0.5);
+		backdrop-filter: blur(8px);
+	}
+
+	.page__logo {
+		width: 48px;
+		height: 48px;
+		object-fit: contain;
+	}
+
+	.page__brand-name {
+		font-size: 1.5rem;
+		font-weight: 700;
+		letter-spacing: -0.01em;
+		color: inherit;
+		text-shadow: 0 1px 0 rgb(255 255 255 / 0.35);
+	}
+
+	.page__hero-copy {
+		display: flex;
+		flex-direction: column;
+		gap: 0.4rem;
+		min-width: 15rem;
 	}
 
 	.page__title {
-		font-size: 1.85rem;
-		font-weight: 600;
-		letter-spacing: -0.01em;
+		margin: 0;
+		font-size: 1.95rem;
+		font-weight: 700;
+		letter-spacing: -0.015em;
+		color: #0b1f33;
+	}
+
+	.page__blurb {
+		margin: 0;
+		font-size: 0.95rem;
+		line-height: 1.5;
+		color: rgb(15 23 42 / 0.75);
+		max-width: clamp(22rem, 50vw, 32rem);
+	}
+
+	.page__legend {
+		margin-top: 2rem;
+		border-radius: 1.5rem;
+		border: 1px solid rgb(148 163 184 / 0.25);
+		background: linear-gradient(145deg, rgb(15 23 42 / 0.9), rgb(30 41 59 / 0.8));
+		box-shadow: 0 26px 48px rgb(2 6 23 / 0.55);
+		padding: clamp(1.5rem, 4vw, 2.5rem);
+	}
+
+	.page__legend .diagram__section-title--legend {
+		margin-bottom: 1.25rem;
+		color: rgb(226 232 240 / 0.92);
+	}
+
+	.page__legend > .diagram__legend {
+		margin: 0;
 	}
 
 	.control-panel {
 		display: flex;
 		flex-direction: column;
 		gap: 0.85rem;
-		width: min(16rem, 100%);
+		width: 20rem;
 		margin-left: auto;
+		padding: 1rem;
+		border-radius: 1rem;
+		border: 1px solid rgb(15 23 42 / 0.35);
+		background: rgb(15 23 42 / 0.82);
+		box-shadow: 0 18px 32px rgb(15 23 42 / 0.4);
 	}
 
 	.mode-switch {
@@ -568,8 +658,37 @@
 	}
 
 	@media (max-width: 40rem) {
+		.page__header {
+			padding: 1.5rem;
+		}
+
+		.page__brand {
+			width: 100%;
+			justify-content: center;
+		}
+
 		.control-panel {
 			width: 100%;
+		}
+
+		.page__legend {
+			padding: 1.25rem;
+		}
+
+		.diagram__legend {
+			grid-template-columns: minmax(0, 1fr);
+		}
+	}
+
+	@media (min-width: 62rem) {
+		.page__header {
+			grid-template-columns: minmax(0, 1fr) auto;
+		}
+	}
+
+	@media (max-width: 68rem) and (min-width: 40.0625rem) {
+		.diagram__legend {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
 		}
 	}
 
@@ -631,7 +750,7 @@
 		margin: 1.5rem 0 0;
 		font-size: 0.75rem;
 		color: rgb(226 232 240 / 0.82);
-		grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+		grid-template-columns: repeat(3, minmax(0, 1fr));
 		align-items: stretch;
 	}
 
