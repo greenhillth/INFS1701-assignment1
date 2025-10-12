@@ -26,6 +26,8 @@ export type NodeNetworkProfile = {
         notes?: string;
 };
 
+export type TrustLevel = 'none' | 'low' | 'high';
+
 export type DeviceTemplate = {
         /** Unique key within the device library */
         templateId: string;
@@ -103,6 +105,7 @@ export type ComputedZone = {
         multipleInstances?: boolean;
         parentId?: string;
         depth: number;
+        trustLevel?: TrustLevel;
 };
 
 export type Spacing = {
@@ -137,6 +140,7 @@ export type ZoneDefinition = {
         minHeight?: number;
         multipleInstances?: boolean;
         parentId?: string;
+        trustLevel?: TrustLevel;
 };
 
 export type AxisSpacing = {

@@ -220,7 +220,8 @@ const blueprint: LayoutBlueprint = {
                         origin: { x: 0, y: 0 },
                         padding: { top: 8, right: 10, bottom: 8, left: 10 },
                         minWidth: 20,
-                        minHeight: 10
+                        minHeight: 10,
+                        trustLevel: 'none'
                 },
                 {
                         id: 'core',
@@ -228,7 +229,8 @@ const blueprint: LayoutBlueprint = {
                         origin: { x: 45, y: 0 },
                         padding: { top: 8, right: 10, bottom: 8, left: 8 },
                         minWidth: 22,
-                        minHeight: 20
+                        minHeight: 20,
+                        trustLevel: 'high'
                 },
                 {
                         id: 'dc',
@@ -236,7 +238,8 @@ const blueprint: LayoutBlueprint = {
                         origin: { x: 30, y: 60 },
                         padding: { top: 8, right: 10, bottom: 8, left: 10 },
                         minWidth: 34,
-                        minHeight: 40
+                        minHeight: 40,
+                        trustLevel: 'high'
                 },
                 {
                         id: 'admin',
@@ -244,7 +247,8 @@ const blueprint: LayoutBlueprint = {
                         origin: { x: 0, y: 40 },
                         padding: { top: 8, right: 10, bottom: 8, left: 10 },
                         minWidth: 20,
-                        minHeight: 20
+                        minHeight: 20,
+                        trustLevel: 'low'
                 },
                 {
                         id: 'admin-office',
@@ -254,7 +258,8 @@ const blueprint: LayoutBlueprint = {
                         minWidth: 20,
                         minHeight: 20,
                         parentId: 'admin',
-                        multipleInstances: true
+                        multipleInstances: true,
+                        trustLevel: 'low'
                 },
                 {
                         id: 'classrooms',
@@ -262,7 +267,8 @@ const blueprint: LayoutBlueprint = {
                         origin: { x: 50, y: 40 },
                         padding: { top: 8, right: 10, bottom: 8, left: 10 },
                         minWidth: 30,
-                        minHeight: 36
+                        minHeight: 36,
+                        trustLevel: 'low'
                 },
                 {
                         id: 'classroom-core',
@@ -272,7 +278,8 @@ const blueprint: LayoutBlueprint = {
                         minWidth: 22,
                         minHeight: 24,
                         multipleInstances: true,
-                        parentId: 'classrooms'
+                        parentId: 'classrooms',
+                        trustLevel: 'low'
                 }
         ],
         nodes: [

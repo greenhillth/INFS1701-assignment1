@@ -6,7 +6,7 @@
 	import Icon from '$lib/components/Icon.svelte';
 	import FlowCanvas from '$lib/topology/FlowCanvas.svelte';
 	import { layout } from '$lib/topology/layouts/highschool';
-	import type { NodeType } from '$lib/topology/types';
+	import type { NodeType, TrustLevel } from '$lib/topology/types';
 
 	const iconSetState = fromStore(iconSet);
 	const pageState = fromStore(page);
@@ -28,6 +28,27 @@
 	const zoneLegendEntries = zoneLegendOrder
 		.map((id) => layout.zones.find((zone) => zone.id === id))
 		.filter((zone): zone is (typeof layout.zones)[number] => Boolean(zone));
+
+	const TRUST_LABELS: Record<TrustLevel, string> = {
+		none: 'No Trust',
+		low: 'Low Trust',
+		high: 'High Trust'
+	};
+
+	const trustLegend: Array<{ level: TrustLevel; copy: string }> = [
+		{
+			level: 'none',
+			copy: 'Internet-facing or guest segments assumed untrusted until filtered by edge security.'
+		},
+		{
+			level: 'low',
+			copy: 'User access networks with limited privileges and monitoring to contain compromise.'
+		},
+		{
+			level: 'high',
+			copy: 'Core infrastructure and data centre workloads with strict controls and least privilege.'
+		}
+	];
 
 	type LegendDeviceItem = { type: NodeType; label: string };
 
@@ -154,6 +175,7 @@
 			pixelRatio: number;
 			width?: number;
 			height?: number;
+			backgroundColor?: string;
 		} = {
 			cacheBust: true,
 			pixelRatio: window.devicePixelRatio ?? 1,
@@ -284,7 +306,24 @@
 					<div class="diagram__legend-zones">
 						<div class="diagram__legend-zone-list">
 							{#each zoneLegendEntries as zone (zone.id)}
-								<span class="diagram__legend-zone-label">{zone.label}</span>
+								<div class="diagram__legend-zone">
+									<span class="diagram__legend-zone-label">{zone.label}</span>
+									{#if zone.trustLevel}
+										<span class={`trust-badge trust-badge--${zone.trustLevel!}`}>
+											{TRUST_LABELS[zone.trustLevel!]}
+										</span>
+									{/if}
+								</div>
+							{/each}
+						</div>
+						<div class="diagram__legend-trust">
+							{#each trustLegend as trust (trust.level)}
+								<div class="diagram__legend-trust-item">
+									<span class={`trust-badge trust-badge--${trust.level}`}>
+										{TRUST_LABELS[trust.level]}
+									</span>
+									<p>{trust.copy}</p>
+								</div>
 							{/each}
 						</div>
 						<div class="diagram__legend-zone-hint">
@@ -784,19 +823,79 @@
 	.diagram__legend-zone-list {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 0.45rem;
+		gap: 0.6rem;
+	}
+
+	.diagram__legend-zone {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.55rem;
+		padding: 0.4rem 0.65rem 0.4rem 0.75rem;
+		border-radius: 9999px;
+		border: 1px solid rgb(148 163 184 / 0.28);
+		background: linear-gradient(135deg, rgb(15 23 42 / 0.55), rgb(30 41 59 / 0.48));
+		box-shadow: 0 12px 24px rgb(15 23 42 / 0.28);
 	}
 
 	.diagram__legend-zone-label {
+		font-size: 0.7rem;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		font-weight: 600;
+		color: rgb(241 245 249 / 0.92);
+	}
+
+	.diagram__legend-trust {
+		display: grid;
+		gap: 0.65rem;
+	}
+
+	.diagram__legend-trust-item {
+		display: flex;
+		align-items: flex-start;
+		gap: 0.6rem;
+		font-size: 0.72rem;
+		color: rgb(226 232 240 / 0.78);
+		line-height: 1.45;
+	}
+
+	.diagram__legend-trust-item p {
+		margin: 0;
+	}
+
+	.trust-badge {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		padding: 0.3rem 0.75rem;
+		padding: 0.25rem 0.7rem;
 		border-radius: 9999px;
-		border: 1px solid rgb(148 163 184 / 0.32);
-		background: rgb(15 23 42 / 0.55);
-		color: rgb(241 245 249 / 0.9);
-		font-weight: 500;
+		border: 1px solid rgb(148 163 184 / 0.35);
+		font-size: 0.6rem;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color: rgb(226 232 240 / 0.88);
+		background: linear-gradient(135deg, rgb(148 163 184 / 0.2), rgb(15 23 42 / 0.55));
+		box-shadow: 0 10px 24px rgb(15 23 42 / 0.32);
+		white-space: nowrap;
+	}
+
+	.trust-badge--none {
+		border-color: rgb(248 113 113 / 0.6);
+		background: linear-gradient(135deg, rgb(248 113 113 / 0.22), rgb(190 24 93 / 0.18));
+		color: rgb(254 202 202 / 0.96);
+	}
+
+	.trust-badge--low {
+		border-color: rgb(252 211 77 / 0.6);
+		background: linear-gradient(135deg, rgb(251 191 36 / 0.24), rgb(217 119 6 / 0.2));
+		color: rgb(254 249 195 / 0.95);
+	}
+
+	.trust-badge--high {
+		border-color: rgb(74 222 128 / 0.65);
+		background: linear-gradient(135deg, rgb(52 211 153 / 0.26), rgb(22 163 74 / 0.2));
+		color: rgb(187 247 208 / 0.96);
 	}
 
 	.diagram__legend-zone-hint {
@@ -936,7 +1035,4 @@
 		color: rgb(148 163 184 / 0.7);
 	}
 
-	code {
-		color: rgb(248 250 252 / 0.9);
-	}
 </style>

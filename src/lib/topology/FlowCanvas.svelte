@@ -1,7 +1,7 @@
 <script lang="ts">
         import NodeCard from '$lib/components/NodeCard.svelte';
         import { onDestroy } from 'svelte';
-        import type { CanvasRenderSettings, FlowLayout } from './types';
+        import type { CanvasRenderSettings, FlowLayout, TrustLevel } from './types';
 
         let { layout, canvasSettings } = $props<{
                 layout: FlowLayout;
@@ -97,6 +97,7 @@
         ): ResolvedWidth => interpretWidth(override) ?? interpretWidth(base) ?? { mode: 'auto' };
 
         const layoutRenderSettings = $derived((layout.canvas.render ?? {}) as CanvasRenderSettings);
+        const zones: FlowLayout['zones'] = layout.zones;
         const baseContainerPadding = $derived(resolveBox(zeroPaddingBox, layoutRenderSettings.padding));
         const baseContainerMargin = $derived(resolveBox(defaultMarginBox, layoutRenderSettings.margin));
 
@@ -144,6 +145,11 @@
         const routeFadeOutDuration = routeStyle.fadeOutDuration;
         const linkHighlightWidth = linkWidth * routeStyle.highlightWidthMultiplier;
         const routeGradientId = 'canvas-route-gradient';
+        const TRUST_LABELS: Record<TrustLevel, string> = {
+                none: 'No Trust',
+                low: 'Low Trust',
+                high: 'High Trust'
+        };
         const svgStyleDeclarations = [
                 `opacity:${linkOpacity}`,
                 linkGlowColor ? `filter:drop-shadow(0 0 ${linkGlowBlur}px ${linkGlowColor})` : ''
@@ -456,7 +462,7 @@
                 {/each}
         </svg>
 
-        {#each layout.zones as zone (zone.id)}
+        {#each zones as zone (zone.id)}
                 <div
                         class="canvas__zone"
                         class:canvas__zone--multiple={zone.multipleInstances}
@@ -467,7 +473,16 @@
                         style:height={`${yPercent(zone.height)}%`}
                         style:z-index={5 + (zone.depth ?? 0)}
                 >
-                        <span class="canvas__zone-label">{zone.label}</span>
+                        <div class="canvas__zone-header">
+                                <span class="canvas__zone-label">{zone.label}</span>
+                                {#if zone.trustLevel}
+                                        <span
+                                                class={`canvas__zone-trust canvas__zone-trust--${zone.trustLevel!}`}
+                                        >
+                                                {TRUST_LABELS[zone.trustLevel!]}
+                                        </span>
+                                {/if}
+                        </div>
                 </div>
         {/each}
 
@@ -596,16 +611,61 @@
                         inset 0 0 60px rgb(250 204 21 / 0.08);
         }
 
-        .canvas__zone-label {
+        .canvas__zone-header {
                 position: absolute;
                 top: 0.75rem;
                 left: 0.9rem;
+                right: 0.9rem;
+                display: flex;
+                align-items: center;
+                gap: 0.65rem;
+                pointer-events: none;
+        }
+
+        .canvas__zone-label {
+                flex: 1 1 auto;
                 font-size: 0.65rem;
                 text-transform: uppercase;
                 letter-spacing: 0.08em;
                 font-weight: 600;
                 color: rgb(226 232 240 / 0.8);
                 transition: color 0.3s ease, text-shadow 0.3s ease;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+        }
+
+        .canvas__zone-trust {
+                flex: 0 0 auto;
+                padding: 0.2rem 0.55rem;
+                border-radius: 9999px;
+                border: 1px solid rgb(148 163 184 / 0.4);
+                font-size: 0.55rem;
+                font-weight: 700;
+                letter-spacing: 0.08em;
+                text-transform: uppercase;
+                color: rgb(226 232 240 / 0.85);
+                background: linear-gradient(135deg, rgb(148 163 184 / 0.2), rgb(15 23 42 / 0.6));
+                box-shadow: 0 6px 18px rgb(15 23 42 / 0.38);
+                white-space: nowrap;
+        }
+
+        .canvas__zone-trust--none {
+                border-color: rgb(248 113 113 / 0.55);
+                background: linear-gradient(135deg, rgb(248 113 113 / 0.2), rgb(190 24 93 / 0.16));
+                color: rgb(254 202 202 / 0.95);
+        }
+
+        .canvas__zone-trust--low {
+                border-color: rgb(252 211 77 / 0.55);
+                background: linear-gradient(135deg, rgb(251 191 36 / 0.22), rgb(217 119 6 / 0.18));
+                color: rgb(254 249 195 / 0.96);
+        }
+
+        .canvas__zone-trust--high {
+                border-color: rgb(74 222 128 / 0.6);
+                background: linear-gradient(135deg, rgb(52 211 153 / 0.24), rgb(22 163 74 / 0.18));
+                color: rgb(187 247 208 / 0.96);
         }
 
         .canvas__zone--nested .canvas__zone-label {

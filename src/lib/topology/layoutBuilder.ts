@@ -279,7 +279,8 @@ const computeZoneBounds = (
                                 height: Math.max(minHeight, padding.top + padding.bottom),
                                 multipleInstances,
                                 parentId: zone.parentId,
-                                depth
+                                depth,
+                                trustLevel: zone.trustLevel
                         } satisfies FlowLayout['zones'][number];
                 }
 
@@ -303,7 +304,8 @@ const computeZoneBounds = (
                         height,
                         multipleInstances,
                         parentId: zone.parentId,
-                        depth
+                        depth,
+                        trustLevel: zone.trustLevel
                 } satisfies FlowLayout['zones'][number];
         });
 
