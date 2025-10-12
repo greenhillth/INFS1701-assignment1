@@ -1,6 +1,6 @@
 <script lang="ts">
         import NodeCard from '$lib/components/NodeCard.svelte';
-        import { onDestroy } from 'svelte';
+        import { onDestroy, onMount } from 'svelte';
         import type { CanvasRenderSettings, FlowLayout, TrustLevel } from './types';
 
         let { layout, canvasSettings } = $props<{
@@ -8,6 +8,9 @@
                 canvasSettings?: CanvasRenderSettings;
         }>();
         let canvasRef: HTMLDivElement;
+        let responsiveNodeScale = $state(1);
+        let resizeObserver: ResizeObserver | null = null;
+        let windowResizeHandler: (() => void) | null = null;
 
         type CSSBox = { top: string; right: string; bottom: string; left: string };
 
@@ -249,6 +252,29 @@
         };
 
         let hoveredSubnetMask = $state<string | null>(null);
+        const MIN_UI_NODE_SCALE = 0.45;
+        // Target node density: shrink cards when the canvas compresses below ~6.5 px per layout unit.
+        const TARGET_PX_PER_UNIT = 6.5;
+
+        const computeResponsiveScale = (width: number): number => {
+                if (!width || layout.canvas.width === 0) {
+                        return 1;
+                }
+
+                const pxPerUnit = width / layout.canvas.width;
+                const proportionalScale = Math.min(1, pxPerUnit / TARGET_PX_PER_UNIT);
+                return Math.max(proportionalScale, MIN_UI_NODE_SCALE);
+        };
+
+        const updateResponsiveScale = () => {
+                if (!canvasRef) {
+                        responsiveNodeScale = 1;
+                        return;
+                }
+
+                const width = canvasRef.clientWidth;
+                responsiveNodeScale = computeResponsiveScale(width);
+        };
 
         let fadeTimeout: ReturnType<typeof setTimeout> | null = null;
 
@@ -338,8 +364,58 @@
                 return canvasRef;
         }
 
+        onMount(() => {
+                if (typeof window === 'undefined') {
+                        return;
+                }
+
+                updateResponsiveScale();
+
+                if (typeof ResizeObserver !== 'undefined') {
+                        resizeObserver = new ResizeObserver((entries) => {
+                                for (const entry of entries) {
+                                        if (entry.target !== canvasRef) {
+                                                continue;
+                                        }
+
+                                        const width =
+                                                entry.contentRect?.width ??
+                                                (Array.isArray(entry.contentBoxSize)
+                                                        ? entry.contentBoxSize[0]?.inlineSize
+                                                        : undefined);
+
+                                        if (width !== undefined && width !== null) {
+                                                responsiveNodeScale = computeResponsiveScale(width);
+                                                return;
+                                        }
+                                }
+
+                                updateResponsiveScale();
+                        });
+
+                        if (canvasRef) {
+                                resizeObserver.observe(canvasRef);
+                        }
+                } else {
+                        windowResizeHandler = () => updateResponsiveScale();
+                        window.addEventListener('resize', windowResizeHandler);
+                }
+        });
+
+        $effect(() => {
+                const widthKey = layout.canvas.width;
+                void widthKey;
+                updateResponsiveScale();
+        });
+
         onDestroy(() => {
                 clearFadeTimer();
+                resizeObserver?.disconnect();
+                resizeObserver = null;
+                if (windowResizeHandler) {
+                        window.removeEventListener('resize', windowResizeHandler);
+                        windowResizeHandler = null;
+                }
         });
 </script>
 
@@ -493,7 +569,10 @@
                         class:canvas__node--active={activeRouteNodeIds.has(node.id)}
                         style:left={`${xPercent(node.x)}%`}
                         style:top={`${yPercent(node.y)}%`}
-                        style:transform={`translate(-50%, -50%) scale(${node.scale ?? 1})`}
+                        style:transform={`translate(-50%, -50%) scale(${Math.max(
+                                (node.scale ?? 1) * responsiveNodeScale,
+                                MIN_UI_NODE_SCALE
+                        )})`}
                         tabindex="0"
                         role="button"
                         aria-describedby={hoveredNodeId === node.id ? tooltipId : undefined}
