@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { fromStore } from 'svelte/store';
 	import { iconSet, type IconSet } from '$lib/stores/iconSet';
+	import { ICON } from '$lib/styles/components/icon';
 
 	let {
 		type,
@@ -82,13 +83,9 @@
 </script>
 
 {#if src}
-	<img {src} alt={title ?? type} width={size} height={size} class="select-none" draggable="false" />
+	<img {src} alt={title ?? type} width={size} height={size} class={ICON.image} draggable="false" />
 {:else}
-	<div
-		class="flex items-center justify-center rounded bg-white/10 text-xs text-red-200/80"
-		style:width={`${size}px`}
-		style:height={`${size}px`}
-	>
+	<div class={ICON.fallback} style:width={`${size}px`} style:height={`${size}px`}>
 		Missing icon: {type}
 	</div>
 {/if}

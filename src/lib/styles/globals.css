@@ -1,0 +1,84 @@
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  html,
+  body {
+    min-height: 100%;
+  }
+
+  body {
+    @apply bg-slate-950 text-slate-100 antialiased;
+  }
+
+  a {
+    @apply transition-colors duration-150;
+  }
+
+  p {
+    @apply text-balance;
+  }
+}
+
+@layer utilities {
+  .bg-page-gradient {
+    @apply bg-[linear-gradient(180deg,#0f172a_0%,#020617_60%,#01010a_100%)];
+  }
+
+  .bg-header-gradient {
+    @apply bg-[linear-gradient(90deg,#7eb6de_0%,#68a2cf_100%)];
+  }
+
+  .bg-control-panel {
+    @apply bg-[rgba(15,23,42,0.82)];
+  }
+
+  .bg-legend-shell {
+    @apply bg-[linear-gradient(145deg,rgba(15,23,42,0.9),rgba(30,41,59,0.8))];
+  }
+
+  .bg-legend-card {
+    @apply bg-[linear-gradient(160deg,rgba(148,163,184,0.14),rgba(15,23,42,0.55))];
+  }
+
+  .bg-diagram-canvas {
+    @apply bg-[linear-gradient(140deg,rgba(30,41,59,0.4),rgba(15,23,42,0.8))];
+  }
+
+  .bg-zone-chip {
+    @apply bg-[linear-gradient(135deg,rgba(15,23,42,0.55),rgba(30,41,59,0.48))];
+  }
+
+  .shadow-header-panel {
+    @apply shadow-[0_26px_52px_rgba(15,23,42,0.4)];
+  }
+
+  .shadow-control-panel {
+    @apply shadow-[0_18px_32px_rgba(15,23,42,0.4)];
+  }
+
+  .shadow-legend-shell {
+    @apply shadow-[0_26px_48px_rgba(2,6,23,0.55)];
+  }
+
+  .shadow-legend-card {
+    @apply shadow-[0_18px_32px_rgba(15,23,42,0.35)];
+  }
+
+  .shadow-card {
+    @apply shadow-[0_18px_32px_rgba(15,23,42,0.35)];
+  }
+
+  .shadow-diagram-frame {
+    @apply shadow-[0_30px_60px_rgba(2,6,23,0.65)];
+  }
+
+  .shadow-zone-chip {
+    @apply shadow-[0_12px_24px_rgba(15,23,42,0.28)];
+  }
+
+  .bg-placeholder-pill {
+    @apply bg-emerald-400/20;
+  }
+}
